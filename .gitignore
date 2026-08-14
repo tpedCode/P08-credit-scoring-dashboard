@@ -1,0 +1,42 @@
+# Environnement virtuel
+
+venv/
+.venv/
+
+# Python
+
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter
+
+.ipynb_checkpoints/
+
+# Fichiers système
+
+.DS_Store
+Thumbs.db
+
+# Variables d'environnement / secrets
+
+.env
+.env.*
+
+# Logs
+
+*.log
+
+# Fichiers temporaires
+
+*.tmp
+*.temp
+
+# Streamlit
+
+.streamlit/secrets.toml
+
+# Données de modélisation non nécessaires au dashboard
+
+data/processed/X_clean.parquet
+data/processed/y.parquet

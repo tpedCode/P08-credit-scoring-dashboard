@@ -1,0 +1,872 @@
+from google.colab import drive
+drive.mount("/content/drive")
+
+Mounted at /content/drive
+__
+# =========================================
+# IMPORTS
+# =========================================
+
+import os
+import re
+import gc
+import shutil
+import joblib
+
+import numpy as np
+import pandas as pd
+__
+# =========================================
+# CHEMINS DU PROJET P08
+# =========================================
+
+BASE_DRIVE_PATH = (
+    "/content/drive/MyDrive/Pro/"
+    "Data_Scientist_by_Openclassrooms_en_cours"
+)
+
+P08_PATH = os.path.join(BASE_DRIVE_PATH, "P08")
+
+RAW_PATH = os.path.join(P08_PATH, "data", "raw")
+PROCESSED_PATH = os.path.join(P08_PATH, "data", "processed")
+MODELS_PATH = os.path.join(P08_PATH, "models")
+
+os.makedirs(PROCESSED_PATH, exist_ok=True)
+os.makedirs(MODELS_PATH, exist_ok=True)
+
+print("P08_PATH       :", P08_PATH)
+print("RAW_PATH       :", RAW_PATH)
+print("PROCESSED_PATH :", PROCESSED_PATH)
+print("MODELS_PATH    :", MODELS_PATH)
+
+P08_PATH       : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08
+RAW_PATH       : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/raw
+PROCESSED_PATH : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed
+MODELS_PATH    : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models
+__
+# =========================================
+# VERIFICATION DES FICHIERS RAW
+# =========================================
+
+if not os.path.exists(RAW_PATH):
+    raise FileNotFoundError(f"Dossier introuvable : {RAW_PATH}")
+
+print("Fichiers présents dans P08/data/raw :")
+
+for file in sorted(os.listdir(RAW_PATH)):
+    print("-", file)
+
+Fichiers présents dans P08/data/raw :
+- HomeCredit_columns_description.csv
+- POS_CASH_balance.csv
+- application_test.csv
+- application_train.csv
+- bureau.csv
+- bureau_balance.csv
+- credit_card_balance.csv
+- installments_payments.csv
+- previous_application.csv
+- sample_submission.csv
+__
+# =========================================
+# VERIFICATION DES ARTEFACTS MODELE
+# =========================================
+
+required_model_files = [
+    "best_model.pkl",
+    "feature_names.pkl",
+    "threshold.pkl"
+]
+
+for file_name in required_model_files:
+    file_path = os.path.join(MODELS_PATH, file_name)
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(
+            f"Fichier manquant : {file_path}\n"
+            "Vérifie que les artefacts sont bien copiés dans P08/models."
+        )
+
+    print("OK :", file_path)
+
+print("Tous les artefacts modèle sont présents.")
+
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models/best_model.pkl
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models/feature_names.pkl
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models/threshold.pkl
+Tous les artefacts modèle sont présents.
+__
+# =========================================
+# CHARGEMENT DES ARTEFACTS MODELE
+# =========================================
+
+MODEL_PATH = os.path.join(MODELS_PATH, "best_model.pkl")
+FEATURE_NAMES_PATH = os.path.join(MODELS_PATH, "feature_names.pkl")
+THRESHOLD_PATH = os.path.join(MODELS_PATH, "threshold.pkl")
+
+model = joblib.load(MODEL_PATH)
+feature_names = joblib.load(FEATURE_NAMES_PATH)
+threshold = float(joblib.load(THRESHOLD_PATH))
+
+print("Modèle chargé       :", model.__class__.__name__)
+print("Nombre de features :", len(feature_names))
+print("Seuil métier       :", threshold)
+print("Premières features :", feature_names[:10])
+
+Modèle chargé       : LGBMClassifier
+Nombre de features : 246
+Seuil métier       : 0.09090909090909091
+Premières features : ['CNT_CHILDREN', 'AMT_INCOME_TOTAL', 'AMT_CREDIT', 'AMT_ANNUITY', 'AMT_GOODS_PRICE', 'REGION_POPULATION_RELATIVE', 'DAYS_BIRTH', 'DAYS_EMPLOYED', 'DAYS_REGISTRATION', 'DAYS_ID_PUBLISH']
+__
+# =========================================
+# FONCTION DE CHARGEMENT CSV
+# =========================================
+
+def load_csv(file_name):
+    file_path = os.path.join(RAW_PATH, file_name)
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(f"Fichier introuvable : {file_path}")
+
+    return pd.read_csv(file_path)
+__
+# =========================================
+# CHARGEMENT DES DONNEES BRUTES
+# =========================================
+
+application_train = load_csv("application_train.csv")
+bureau = load_csv("bureau.csv")
+previous_application = load_csv("previous_application.csv")
+installments_payments = load_csv("installments_payments.csv")
+
+print("application_train      :", application_train.shape)
+print("bureau                 :", bureau.shape)
+print("previous_application   :", previous_application.shape)
+print("installments_payments  :", installments_payments.shape)
+
+application_train      : (307511, 122)
+bureau                 : (1716428, 17)
+previous_application   : (1670214, 37)
+installments_payments  : (13605401, 8)
+__
+# =========================================
+# ENCODAGE ONE-HOT
+# =========================================
+
+def one_hot_encoder(df, nan_as_category=True):
+    """
+    Encode les variables catégorielles en variables numériques 0/1.
+
+    Objectif :
+    - reproduire la logique du notebook de modélisation ;
+    - obtenir des colonnes compatibles avec LightGBM et l'API ;
+    - éviter les valeurs booléennes dans le payload API.
+    """
+
+    categorical_columns = [
+        col
+        for col in df.columns
+        if df[col].dtype == "object"
+    ]
+
+    df = pd.get_dummies(
+        df,
+        columns=categorical_columns,
+        dummy_na=nan_as_category,
+        dtype=int
+    )
+
+    return df
+__
+# =========================================
+# FEATURE ENGINEERING - BASE APPLICATION
+# =========================================
+
+feature_engineering = application_train.copy()
+
+# Correction anomalie DAYS_EMPLOYED
+feature_engineering["DAYS_EMPLOYED_ANOM"] = (
+    feature_engineering["DAYS_EMPLOYED"] == 365243
+).astype(int)
+
+feature_engineering["DAYS_EMPLOYED"] = (
+    feature_engineering["DAYS_EMPLOYED"].replace(365243, np.nan)
+)
+
+# Variables temporelles plus lisibles
+feature_engineering["AGE"] = -feature_engineering["DAYS_BIRTH"]
+
+feature_engineering["YEARS_EMPLOYED"] = (
+    -feature_engineering["DAYS_EMPLOYED"] / 365
+)
+
+# Ratios financiers
+feature_engineering["CREDIT_INCOME_RATIO"] = (
+    feature_engineering["AMT_CREDIT"] / feature_engineering["AMT_INCOME_TOTAL"]
+)
+
+feature_engineering["ANNUITY_INCOME_RATIO"] = (
+    feature_engineering["AMT_ANNUITY"] / feature_engineering["AMT_INCOME_TOTAL"]
+)
+
+feature_engineering["PAYMENT_RATE"] = (
+    feature_engineering["AMT_ANNUITY"] / feature_engineering["AMT_CREDIT"]
+)
+
+feature_engineering["INCOME_PER_PERSON"] = (
+    feature_engineering["AMT_INCOME_TOTAL"] / feature_engineering["CNT_FAM_MEMBERS"]
+)
+
+# Score externe moyen
+feature_engineering["EXT_SOURCE_MEAN"] = feature_engineering[
+    ["EXT_SOURCE_1", "EXT_SOURCE_2", "EXT_SOURCE_3"]
+].mean(axis=1)
+
+# Encodage des variables catégorielles
+feature_engineering = one_hot_encoder(feature_engineering)
+
+print("feature_engineering après Application :", feature_engineering.shape)
+
+feature_engineering après Application : (307511, 270)
+__
+# =========================================
+# FEATURE ENGINEERING - BUREAU
+# =========================================
+
+bureau_df = one_hot_encoder(bureau.copy())
+
+bureau_agg = bureau_df.groupby("SK_ID_CURR").agg({
+    "AMT_CREDIT_SUM": ["mean", "sum"],
+    "AMT_CREDIT_SUM_DEBT": ["mean", "sum"],
+    "DAYS_CREDIT": ["min", "mean"],
+    "CREDIT_DAY_OVERDUE": ["max", "mean"]
+})
+
+bureau_agg.columns = [
+    "BURO_" + "_".join(col).upper()
+    for col in bureau_agg.columns
+]
+
+feature_engineering = feature_engineering.join(
+    bureau_agg,
+    how="left",
+    on="SK_ID_CURR"
+)
+
+del bureau_df, bureau_agg
+gc.collect()
+
+print("feature_engineering après Bureau :", feature_engineering.shape)
+
+feature_engineering après Bureau : (307511, 278)
+__
+# =========================================
+# FEATURE ENGINEERING - PREVIOUS APPLICATION
+# =========================================
+
+prev = one_hot_encoder(previous_application.copy())
+
+prev["APP_CREDIT_PERC"] = (
+    prev["AMT_APPLICATION"] / prev["AMT_CREDIT"]
+)
+
+prev_agg = prev.groupby("SK_ID_CURR").agg({
+    "AMT_APPLICATION": ["mean"],
+    "AMT_CREDIT": ["mean"],
+    "APP_CREDIT_PERC": ["mean"],
+    "CNT_PAYMENT": ["mean"]
+})
+
+prev_agg.columns = [
+    "PREV_" + "_".join(col).upper()
+    for col in prev_agg.columns
+]
+
+feature_engineering = feature_engineering.join(
+    prev_agg,
+    how="left",
+    on="SK_ID_CURR"
+)
+
+del prev, prev_agg
+gc.collect()
+
+print("feature_engineering après Previous Application :", feature_engineering.shape)
+
+feature_engineering après Previous Application : (307511, 282)
+__
+# =========================================
+# FEATURE ENGINEERING - INSTALLMENTS PAYMENTS
+# =========================================
+
+ins = installments_payments.copy()
+
+ins["PAYMENT_PERC"] = (
+    ins["AMT_PAYMENT"] / ins["AMT_INSTALMENT"]
+)
+
+ins["DPD"] = (
+    ins["DAYS_ENTRY_PAYMENT"] - ins["DAYS_INSTALMENT"]
+)
+
+ins["DPD"] = ins["DPD"].apply(
+    lambda x: x if x > 0 else 0
+)
+
+ins_agg = ins.groupby("SK_ID_CURR").agg({
+    "PAYMENT_PERC": ["mean"],
+    "DPD": ["max", "mean", "sum"]
+})
+
+ins_agg.columns = [
+    "INSTAL_" + "_".join(col).upper()
+    for col in ins_agg.columns
+]
+
+feature_engineering = feature_engineering.join(
+    ins_agg,
+    how="left",
+    on="SK_ID_CURR"
+)
+
+del ins, ins_agg
+gc.collect()
+
+print("feature_engineering après Installments Payments :", feature_engineering.shape)
+
+feature_engineering après Installments Payments : (307511, 286)
+__
+# =========================================
+# NORMALISATION DES NOMS DE COLONNES
+# =========================================
+
+feature_engineering.columns = [
+    re.sub(r"[^A-Za-z0-9_]", "_", str(col))
+    for col in feature_engineering.columns
+]
+
+feature_engineering.columns = [
+    re.sub(r"_+", "_", col).strip("_")
+    for col in feature_engineering.columns
+]
+
+n_cols = len(feature_engineering.columns)
+n_unique_cols = len(set(feature_engineering.columns))
+
+print("Nb colonnes :", n_cols)
+print("Nb colonnes uniques :", n_unique_cols)
+
+if n_cols != n_unique_cols:
+    duplicated_cols = (
+        pd.Series(feature_engineering.columns)
+        .value_counts()
+        .loc[lambda x: x > 1]
+    )
+    print("Colonnes dupliquées détectées :")
+    display(duplicated_cols)
+
+invalid_cols = [
+    col
+    for col in feature_engineering.columns
+    if re.search(r"[:,{}\[\]\"']", col)
+]
+
+print("Colonnes contenant encore des caractères interdits :", len(invalid_cols))
+
+if len(invalid_cols) > 0:
+    display(pd.DataFrame({"column": invalid_cols}))
+
+print("Normalisation des colonnes terminée.")
+
+Nb colonnes : 286
+Nb colonnes uniques : 286
+Colonnes contenant encore des caractères interdits : 0
+Normalisation des colonnes terminée.
+__
+# =========================================
+# CONTROLE DES COLONNES ESSENTIELLES
+# =========================================
+
+required_columns = ["SK_ID_CURR", "TARGET"]
+
+for col in required_columns:
+    if col not in feature_engineering.columns:
+        raise ValueError(f"Colonne manquante : {col}")
+
+print("SK_ID_CURR et TARGET sont bien présents.")
+print("Nombre de lignes :", len(feature_engineering))
+print("Nombre de clients uniques :", feature_engineering["SK_ID_CURR"].nunique())
+
+SK_ID_CURR et TARGET sont bien présents.
+Nombre de lignes : 307511
+Nombre de clients uniques : 307511
+__
+# =========================================
+# CREATION X_RAW ET Y
+# =========================================
+
+X_raw = feature_engineering.drop(
+    columns=["TARGET", "SK_ID_CURR"]
+)
+
+y = feature_engineering["TARGET"]
+
+print("X_raw shape :", X_raw.shape)
+print("y shape     :", y.shape)
+
+X_raw shape : (307511, 284)
+y shape     : (307511,)
+__
+# =========================================
+# NETTOYAGE DE X_RAW
+# =========================================
+
+X_clean = X_raw.copy()
+
+# Remplacement des valeurs infinies
+X_clean = X_clean.replace([np.inf, -np.inf], np.nan)
+
+# Remplacement des valeurs manquantes
+X_clean = X_clean.fillna(0)
+
+# Conversion des booléens en 0/1 si besoin
+bool_cols = X_clean.select_dtypes(include=["bool"]).columns
+
+if len(bool_cols) > 0:
+    X_clean[bool_cols] = X_clean[bool_cols].astype(int)
+
+print("Colonnes booléennes converties :", len(bool_cols))
+print("Nb NaN restants :", X_clean.isna().sum().sum())
+print("X_clean shape après nettoyage :", X_clean.shape)
+
+Colonnes booléennes converties : 0
+Nb NaN restants : 0
+X_clean shape après nettoyage : (307511, 284)
+__
+# =========================================
+# SUPPRESSION DES COLONNES CONSTANTES
+# =========================================
+
+constant_cols = X_clean.nunique() <= 1
+
+print("Colonnes constantes supprimées :", constant_cols.sum())
+
+X_clean = X_clean.loc[:, ~constant_cols]
+
+print("X_clean après suppression des constantes :", X_clean.shape)
+
+Colonnes constantes supprimées : 10
+X_clean après suppression des constantes : (307511, 274)
+__
+# =========================================
+# REDUCTION DES CORRELATIONS FORTES
+# =========================================
+
+corr_matrix = X_clean.corr().abs()
+
+upper = corr_matrix.where(
+    np.triu(np.ones(corr_matrix.shape), k=1).astype(bool)
+)
+
+to_drop = [
+    col
+    for col in upper.columns
+    if any(upper[col] > 0.99)
+]
+
+print("Colonnes supprimées pour corrélation forte :", len(to_drop))
+
+X_clean = X_clean.drop(columns=to_drop)
+
+print("X_clean après réduction corrélation :", X_clean.shape)
+
+Colonnes supprimées pour corrélation forte : 28
+X_clean après réduction corrélation : (307511, 246)
+__
+# =========================================
+# ALIGNEMENT EXACT AVEC LES FEATURES DU MODELE
+# =========================================
+
+current_features = set(X_clean.columns)
+expected_features = set(feature_names)
+
+missing_features = sorted(list(expected_features - current_features))
+extra_features = sorted(list(current_features - expected_features))
+
+print("Nombre de features attendues :", len(feature_names))
+print("Nombre de features actuelles :", X_clean.shape[1])
+print("Features manquantes          :", len(missing_features))
+print("Features supplémentaires     :", len(extra_features))
+
+if missing_features:
+    print("\nFeatures manquantes :")
+    print(missing_features)
+
+if extra_features:
+    print("\nExemples de features supplémentaires non utilisées par le modèle :")
+    print(extra_features[:30])
+
+# Réalignement strict sur les colonnes du modèle
+X_model = X_clean.reindex(
+    columns=feature_names,
+    fill_value=0
+)
+
+print("\nX_model shape :", X_model.shape)
+
+if list(X_model.columns) == list(feature_names):
+    print("OK : X_model est aligné exactement sur feature_names.pkl.")
+else:
+    raise ValueError("Erreur : l'ordre des colonnes ne correspond pas à feature_names.")
+
+Nombre de features attendues : 246
+Nombre de features actuelles : 246
+Features manquantes          : 0
+Features supplémentaires     : 0
+
+X_model shape : (307511, 246)
+OK : X_model est aligné exactement sur feature_names.pkl.
+__
+# =========================================
+# CONTROLE FINAL DU NOMBRE DE FEATURES
+# =========================================
+
+expected_n_features = 246
+
+print("Shape finale de X_model :", X_model.shape)
+
+if X_model.shape[1] != expected_n_features:
+    raise ValueError(
+        f"Nombre de features incorrect : {X_model.shape[1]} au lieu de {expected_n_features}"
+    )
+
+print("OK : X_model contient bien 246 features.")
+
+Shape finale de X_model : (307511, 246)
+OK : X_model contient bien 246 features.
+__
+# =========================================
+# CREATION DE DASHBOARD_CLIENTS
+# =========================================
+
+dashboard_clients = pd.concat(
+    [
+        feature_engineering[["SK_ID_CURR"]].reset_index(drop=True),
+        X_model.reset_index(drop=True)
+    ],
+    axis=1
+)
+
+print("dashboard_clients shape :", dashboard_clients.shape)
+
+expected_dashboard_cols = 1 + len(feature_names)
+
+if dashboard_clients.shape[1] != expected_dashboard_cols:
+    raise ValueError(
+        f"Nombre de colonnes incorrect : {dashboard_clients.shape[1]} "
+        f"au lieu de {expected_dashboard_cols}"
+    )
+
+display(dashboard_clients.head())
+
+dashboard_clients shape : (307511, 247)
+SK_ID_CURR	CNT_CHILDREN	AMT_INCOME_TOTAL	AMT_CREDIT	AMT_ANNUITY	AMT_GOODS_PRICE	REGION_POPULATION_RELATIVE	DAYS_BIRTH	DAYS_EMPLOYED	DAYS_REGISTRATION	...	BURO_CREDIT_DAY_OVERDUE_MAX	BURO_CREDIT_DAY_OVERDUE_MEAN	PREV_AMT_APPLICATION_MEAN	PREV_AMT_CREDIT_MEAN	PREV_APP_CREDIT_PERC_MEAN	PREV_CNT_PAYMENT_MEAN	INSTAL_PAYMENT_PERC_MEAN	INSTAL_DPD_MAX	INSTAL_DPD_MEAN	INSTAL_DPD_SUM
+0	100002	0	202500.0	406597.5	24700.5	351000.0	0.018801	-9461	-637.0	-3648.0	...	0.0	0.0	179055.00	179055.00	1.000000	24.000000	1.000000	0.0	0.000000	0.0
+1	100003	0	270000.0	1293502.5	35698.5	1129500.0	0.003541	-16765	-1188.0	-1186.0	...	0.0	0.0	435436.50	484191.00	0.949329	10.000000	1.000000	0.0	0.000000	0.0
+2	100004	0	67500.0	135000.0	6750.0	135000.0	0.010032	-19046	-225.0	-4260.0	...	0.0	0.0	24282.00	20106.00	1.207699	4.000000	1.000000	0.0	0.000000	0.0
+3	100006	0	135000.0	312682.5	29686.5	297000.0	0.008019	-19005	-3039.0	-9833.0	...	0.0	0.0	272203.26	291695.50	1.010763	23.000000	1.000000	0.0	0.000000	0.0
+4	100007	0	121500.0	513000.0	21865.5	513000.0	0.028663	-19932	-3038.0	-4311.0	...	0.0	0.0	150530.25	166638.75	0.969650	20.666667	0.954545	12.0	0.954545	63.0
+5 rows × 247 columns
+__
+# =========================================
+# TEST DE PREPARATION D'UN CLIENT POUR L'API
+# =========================================
+
+client_id = dashboard_clients["SK_ID_CURR"].iloc[0]
+
+selected_client = dashboard_clients[
+    dashboard_clients["SK_ID_CURR"] == client_id
+].iloc[0]
+
+client_payload = selected_client.drop(
+    labels=["SK_ID_CURR"]
+).to_dict()
+
+print("Client sélectionné :", client_id)
+print("Nombre de variables envoyées à l'API :", len(client_payload))
+
+if len(client_payload) != 246:
+    raise ValueError("Le payload client ne contient pas 246 variables.")
+
+non_numeric_values = {
+    key: value
+    for key, value in client_payload.items()
+    if not isinstance(value, (int, float, np.integer, np.floating))
+}
+
+print("Nombre de valeurs non numériques :", len(non_numeric_values))
+
+if non_numeric_values:
+    print(non_numeric_values)
+    raise ValueError("Certaines valeurs du payload ne sont pas numériques.")
+
+print("OK : le client est prêt à être envoyé à l'API.")
+
+Client sélectionné : 100002
+Nombre de variables envoyées à l'API : 246
+Nombre de valeurs non numériques : 0
+OK : le client est prêt à être envoyé à l'API.
+__
+# =========================================
+# FEATURE IMPORTANCE GLOBALE
+# =========================================
+
+if hasattr(model, "feature_importances_"):
+    global_feature_importance = pd.DataFrame({
+        "feature": feature_names,
+        "importance": model.feature_importances_
+    })
+
+    global_feature_importance = (
+        global_feature_importance
+        .sort_values("importance", ascending=False)
+        .reset_index(drop=True)
+    )
+
+    display(global_feature_importance.head(20))
+
+else:
+    raise ValueError(
+        "Le modèle ne fournit pas d'attribut feature_importances_."
+    )
+
+
+feature	importance
+0	PAYMENT_RATE	453
+1	EXT_SOURCE_MEAN	400
+2	DAYS_BIRTH	280
+3	PREV_CNT_PAYMENT_MEAN	227
+4	EXT_SOURCE_3	210
+5	PREV_APP_CREDIT_PERC_MEAN	209
+6	DAYS_EMPLOYED	208
+7	DAYS_ID_PUBLISH	200
+8	DAYS_LAST_PHONE_CHANGE	196
+9	EXT_SOURCE_2	192
+10	DAYS_REGISTRATION	190
+11	EXT_SOURCE_1	189
+12	INSTAL_DPD_MEAN	183
+13	BURO_DAYS_CREDIT_MEAN	181
+14	AMT_ANNUITY	176
+15	BURO_AMT_CREDIT_SUM_MEAN	173
+16	ANNUITY_INCOME_RATIO	171
+17	CREDIT_INCOME_RATIO	161
+18	PREV_AMT_APPLICATION_MEAN	152
+19	REGION_POPULATION_RELATIVE	151
+__
+# =========================================
+# SAUVEGARDE DES FICHIERS DU DASHBOARD
+# =========================================
+
+dashboard_clients_path = os.path.join(
+    PROCESSED_PATH,
+    "dashboard_clients.parquet"
+)
+
+feature_engineering_path = os.path.join(
+    PROCESSED_PATH,
+    "feature_engineering.parquet"
+)
+
+x_clean_path = os.path.join(
+    PROCESSED_PATH,
+    "X_clean.parquet"
+)
+
+y_path = os.path.join(
+    PROCESSED_PATH,
+    "y.parquet"
+)
+
+global_feature_importance_path = os.path.join(
+    PROCESSED_PATH,
+    "global_feature_importance.parquet"
+)
+
+dashboard_clients.to_parquet(
+    dashboard_clients_path,
+    index=False
+)
+
+feature_engineering.to_parquet(
+    feature_engineering_path,
+    index=False
+)
+
+X_model.to_parquet(
+    x_clean_path,
+    index=False
+)
+
+y.to_frame(name="TARGET").to_parquet(
+    y_path,
+    index=False
+)
+
+global_feature_importance.to_parquet(
+    global_feature_importance_path,
+    index=False
+)
+
+print("Fichiers sauvegardés :")
+print("-", dashboard_clients_path)
+print("-", feature_engineering_path)
+print("-", x_clean_path)
+print("-", y_path)
+print("-", global_feature_importance_path)
+
+Fichiers sauvegardés :
+- /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/dashboard_clients.parquet
+- /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/feature_engineering.parquet
+- /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/X_clean.parquet
+- /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/y.parquet
+- /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/global_feature_importance.parquet
+__
+# =========================================
+# CONTROLE DE RELECTURE
+# =========================================
+
+dashboard_clients_check = pd.read_parquet(dashboard_clients_path)
+feature_engineering_check = pd.read_parquet(feature_engineering_path)
+X_clean_check = pd.read_parquet(x_clean_path)
+y_check = pd.read_parquet(y_path)
+global_feature_importance_check = pd.read_parquet(global_feature_importance_path)
+
+print("dashboard_clients         :", dashboard_clients_check.shape)
+print("feature_engineering       :", feature_engineering_check.shape)
+print("X_clean                   :", X_clean_check.shape)
+print("y                         :", y_check.shape)
+print("global_feature_importance :", global_feature_importance_check.shape)
+
+display(dashboard_clients_check.head())
+display(global_feature_importance_check.head(10))
+
+dashboard_clients         : (307511, 247)
+feature_engineering       : (307511, 286)
+X_clean                   : (307511, 246)
+y                         : (307511, 1)
+global_feature_importance : (246, 2)
+SK_ID_CURR	CNT_CHILDREN	AMT_INCOME_TOTAL	AMT_CREDIT	AMT_ANNUITY	AMT_GOODS_PRICE	REGION_POPULATION_RELATIVE	DAYS_BIRTH	DAYS_EMPLOYED	DAYS_REGISTRATION	...	BURO_CREDIT_DAY_OVERDUE_MAX	BURO_CREDIT_DAY_OVERDUE_MEAN	PREV_AMT_APPLICATION_MEAN	PREV_AMT_CREDIT_MEAN	PREV_APP_CREDIT_PERC_MEAN	PREV_CNT_PAYMENT_MEAN	INSTAL_PAYMENT_PERC_MEAN	INSTAL_DPD_MAX	INSTAL_DPD_MEAN	INSTAL_DPD_SUM
+0	100002	0	202500.0	406597.5	24700.5	351000.0	0.018801	-9461	-637.0	-3648.0	...	0.0	0.0	179055.00	179055.00	1.000000	24.000000	1.000000	0.0	0.000000	0.0
+1	100003	0	270000.0	1293502.5	35698.5	1129500.0	0.003541	-16765	-1188.0	-1186.0	...	0.0	0.0	435436.50	484191.00	0.949329	10.000000	1.000000	0.0	0.000000	0.0
+2	100004	0	67500.0	135000.0	6750.0	135000.0	0.010032	-19046	-225.0	-4260.0	...	0.0	0.0	24282.00	20106.00	1.207699	4.000000	1.000000	0.0	0.000000	0.0
+3	100006	0	135000.0	312682.5	29686.5	297000.0	0.008019	-19005	-3039.0	-9833.0	...	0.0	0.0	272203.26	291695.50	1.010763	23.000000	1.000000	0.0	0.000000	0.0
+4	100007	0	121500.0	513000.0	21865.5	513000.0	0.028663	-19932	-3038.0	-4311.0	...	0.0	0.0	150530.25	166638.75	0.969650	20.666667	0.954545	12.0	0.954545	63.0
+5 rows × 247 columns
+
+
+feature	importance
+0	PAYMENT_RATE	453
+1	EXT_SOURCE_MEAN	400
+2	DAYS_BIRTH	280
+3	PREV_CNT_PAYMENT_MEAN	227
+4	EXT_SOURCE_3	210
+5	PREV_APP_CREDIT_PERC_MEAN	209
+6	DAYS_EMPLOYED	208
+7	DAYS_ID_PUBLISH	200
+8	DAYS_LAST_PHONE_CHANGE	196
+9	EXT_SOURCE_2	192
+__
+# =========================================
+# CONTROLE FINAL D'AUTONOMIE P08
+# =========================================
+
+required_files = [
+    os.path.join(PROCESSED_PATH, "dashboard_clients.parquet"),
+    os.path.join(PROCESSED_PATH, "feature_engineering.parquet"),
+    os.path.join(PROCESSED_PATH, "X_clean.parquet"),
+    os.path.join(PROCESSED_PATH, "y.parquet"),
+    os.path.join(PROCESSED_PATH, "global_feature_importance.parquet"),
+    os.path.join(MODELS_PATH, "best_model.pkl"),
+    os.path.join(MODELS_PATH, "feature_names.pkl"),
+    os.path.join(MODELS_PATH, "threshold.pkl")
+]
+
+missing_files = []
+
+for file_path in required_files:
+    if os.path.exists(file_path):
+        print("OK :", file_path)
+    else:
+        print("MANQUANT :", file_path)
+        missing_files.append(file_path)
+
+if missing_files:
+    raise FileNotFoundError(
+        f"Certains fichiers nécessaires sont manquants : {missing_files}"
+    )
+
+print("\nP08 est prêt pour la suite du projet dashboard.")
+
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/dashboard_clients.parquet
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/feature_engineering.parquet
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/X_clean.parquet
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/y.parquet
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed/global_feature_importance.parquet
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models/best_model.pkl
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models/feature_names.pkl
+OK : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models/threshold.pkl
+
+P08 est prêt pour la suite du projet dashboard.
+__
+# =========================================
+# CONTROLE DU FICHIER API
+# =========================================
+
+from pathlib import Path
+import importlib.util
+
+BASE_DRIVE_PATH = (
+    "/content/drive/MyDrive/Pro/"
+    "Data_Scientist_by_Openclassrooms_en_cours"
+)
+
+P08_PATH = Path(BASE_DRIVE_PATH) / "P08"
+API_PATH = P08_PATH / "api" / "api_home_credit_scoring.py"
+
+print("API_PATH :", API_PATH)
+
+if not API_PATH.exists():
+    raise FileNotFoundError(f"Fichier API introuvable : {API_PATH}")
+
+api_content = API_PATH.read_text(encoding="utf-8")
+
+bad_patterns = [
+    "Votre abonnement",
+    "<br>",
+    "</br>",
+    "&gt;",
+    "&lt;"
+]
+
+found_bad_patterns = [
+    pattern
+    for pattern in bad_patterns
+    if pattern in api_content
+]
+
+print("Taille du fichier API :", len(api_content), "caractères")
+print("Patterns problématiques trouvés :", found_bad_patterns)
+
+if found_bad_patterns:
+    raise ValueError(
+        "Le fichier API contient des éléments parasites. "
+        "Il faut nettoyer le fichier avant de continuer."
+    )
+
+print("OK : le fichier API ne contient pas de balises HTML ou texte parasite évident.")
+
+API_PATH : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/api/api_home_credit_scoring.py
+Taille du fichier API : 29510 caractères
+Patterns problématiques trouvés : []
+OK : le fichier API ne contient pas de balises HTML ou texte parasite évident.
+__

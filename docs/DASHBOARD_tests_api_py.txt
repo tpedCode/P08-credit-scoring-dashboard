@@ -1,0 +1,222 @@
+from google.colab import drive
+drive.mount("/content/drive")
+
+Mounted at /content/drive
+__
+# =========================================
+# IMPORTS
+# =========================================
+
+import sys
+import json
+import joblib
+
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from pprint import pprint
+__
+# =========================================
+# CHEMINS DU PROJET P08
+# =========================================
+
+BASE_DRIVE_PATH = (
+    "/content/drive/MyDrive/Pro/"
+    "Data_Scientist_by_Openclassrooms_en_cours"
+)
+
+P08_PATH = Path(BASE_DRIVE_PATH) / "P08"
+
+API_PATH = P08_PATH / "api"
+MODELS_PATH = P08_PATH / "models"
+PROCESSED_PATH = P08_PATH / "data" / "processed"
+
+print("P08_PATH       :", P08_PATH)
+print("API_PATH       :", API_PATH)
+print("MODELS_PATH    :", MODELS_PATH)
+print("PROCESSED_PATH :", PROCESSED_PATH)
+
+P08_PATH       : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08
+API_PATH       : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/api
+MODELS_PATH    : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/models
+PROCESSED_PATH : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/data/processed
+__
+# =========================================
+# CONTROLE DU FICHIER API
+# =========================================
+
+from pathlib import Path
+import importlib.util
+
+BASE_DRIVE_PATH = (
+    "/content/drive/MyDrive/Pro/"
+    "Data_Scientist_by_Openclassrooms_en_cours"
+)
+
+P08_PATH = Path(BASE_DRIVE_PATH) / "P08"
+API_FILE = P08_PATH / "api" / "api_home_credit_scoring.py"
+
+print("API_FILE :", API_FILE)
+
+if not API_FILE.exists():
+    raise FileNotFoundError(f"Fichier API introuvable : {API_FILE}")
+
+api_content = API_FILE.read_text(encoding="utf-8")
+
+bad_patterns = [
+    "Votre abonnement",
+    "<br>",
+    "</br>",
+    "&gt;",
+    "&lt;"
+]
+
+found_bad_patterns = [
+    pattern
+    for pattern in bad_patterns
+    if pattern in api_content
+]
+
+print("Taille du fichier API :", len(api_content), "caractères")
+print("Patterns problématiques trouvés :", found_bad_patterns)
+
+if found_bad_patterns:
+    raise ValueError(
+        "Le fichier API contient des éléments parasites."
+    )
+
+print("OK : fichier API propre.")
+
+API_FILE : /content/drive/MyDrive/Pro/Data_Scientist_by_Openclassrooms_en_cours/P08/api/api_home_credit_scoring.py
+Taille du fichier API : 29510 caractères
+Patterns problématiques trouvés : []
+OK : fichier API propre.
+__
+# =========================================
+# TEST IMPORT API
+# =========================================
+
+if str(API_PATH) not in sys.path:
+    sys.path.append(str(API_PATH))
+
+import api_home_credit_scoring as api
+
+print("API importée avec succès")
+print("Modèle :", api.model.__class__.__name__)
+print("Nb features :", len(api.feature_names))
+print("Seuil :", api.threshold)
+
+API importée avec succès
+Modèle : LGBMClassifier
+Nb features : 246
+Seuil : 0.09090909090909091
+__
+# =========================================
+# CHARGEMENT DES DONNEES DASHBOARD
+# =========================================
+
+dashboard_clients = pd.read_parquet(
+    PROCESSED_PATH / "dashboard_clients.parquet"
+)
+
+print("Shape :", dashboard_clients.shape)
+
+display(
+    dashboard_clients[
+        ["SK_ID_CURR"]
+    ].head()
+)
+
+Shape : (307511, 247)
+SK_ID_CURR
+0	100002
+1	100003
+2	100004
+3	100006
+4	100007
+__
+# =========================================
+# SELECTION D'UN CLIENT
+# =========================================
+
+client_id = dashboard_clients["SK_ID_CURR"].iloc[0]
+
+selected_client = dashboard_clients[
+    dashboard_clients["SK_ID_CURR"] == client_id
+]
+
+print("Client sélectionné :", client_id)
+
+print(
+    "Nombre de colonnes :",
+    selected_client.shape[1]
+)
+
+Client sélectionné : 100002
+Nombre de colonnes : 247
+__
+# =========================================
+# CONSTRUCTION DU PAYLOAD
+# =========================================
+
+client_features = (
+    selected_client
+    .drop(columns=["SK_ID_CURR"])
+    .iloc[0]
+    .to_dict()
+)
+
+payload = {
+    "requested_by": "tests_api",
+    "clients": [
+        client_features
+    ]
+}
+
+print("Nb variables envoyées :", len(client_features))
+
+print(
+    "\nPremières variables :"
+)
+
+for key in list(client_features.keys())[:5]:
+    print(key, ":", client_features[key])
+
+Nb variables envoyées : 246
+
+Premières variables :
+CNT_CHILDREN : 0.0
+AMT_INCOME_TOTAL : 202500.0
+AMT_CREDIT : 406597.5
+AMT_ANNUITY : 24700.5
+AMT_GOODS_PRICE : 351000.0
+__
+# =========================================
+# TEST DE PREDICTION
+# =========================================
+
+request = api.PredictionRequest(
+    **payload
+)
+
+result = api.predict(request)
+
+pprint(result)
+
+{'n_clients': 1,
+ 'predictions': [{'business_threshold': 0.090909,
+                  'client_index': 0,
+                  'data_completeness_level': 'HIGH',
+                  'decision': 'REFUSED',
+                  'default_probability': 0.365948,
+                  'feature_coverage_rate': np.float64(100.0),
+                  'missing_recommended_features': [],
+                  'n_missing_optional_features': 0,
+                  'warning': 'Complétude pondérée : 100.00% (≥ 80%). La '
+                             'couverture des variables importantes du modèle '
+                             'est jugée satisfaisante. Nombre de variables '
+                             'optionnelles absentes : 0.'}],
+ 'requested_by': 'tests_api'}
+__

@@ -1,0 +1,1144 @@
+# PLAN PROJET P08 — DASHBOARD CREDIT SCORING - V1
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 1 — DONNÉES DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Créer les données nécessaires au dashboard.
+
+LIVRABLES
+✅ dashboard_clients.parquet
+✅ feature_engineering.parquet
+✅ global_feature_importance.parquet
+✅ Compatibilité API validée
+✅ Prédiction validée
+
+RÉSULTAT
+dashboard_clients.parquet
+Shape : (307511, 247)
+
+Contenu :
+• SK_ID_CURR
+• 246 features modèle
+
+ARCHITECTURE DE STOCKAGE
+🟨 Les fichiers Parquet seront dans un premier temps testés pour un
+   versionnement direct dans GitHub.
+🟨 Le modèle .pkl sera également testé dans GitHub.
+🟨 L'objectif est de conserver dans GitHub l'ensemble des artefacts
+   nécessaires au fonctionnement du dashboard et de l'API.
+🟨 Une solution de stockage externe ne sera mise en place que si
+   GitHub présente une limitation technique ou des temps de transfert
+   trop importants.
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 2 — STREAMLIT V1
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Sélection client → API → Score → Décision
+
+SOUS-ÉTAPES
+✅ 2.1A API propre
+✅ 2.1B Import API
+✅ 2.1C Test réel de prédiction
+✅ 2.2 Structure Streamlit
+✅ 2.3 Score et décision
+
+FONCTIONNALITÉS VALIDÉES
+✅ Sélecteur client
+✅ Appel API FastAPI
+✅ Score
+✅ Seuil métier
+✅ Distance au seuil
+✅ Décision traduite
+✅ Complétude
+✅ Message métier
+
+RÉSULTAT TESTÉ
+Client : 100002
+Probabilité : 36.59 %
+Seuil : 9.09 %
+Décision : Crédit refusé
+Complétude : Élevée
+Couverture : 100 %
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 3 — INFORMATIONS CLIENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+SOURCE
+✅ feature_engineering.parquet
+
+VARIABLES AFFICHÉES
+✅ SK_ID_CURR
+✅ AMT_INCOME_TOTAL
+✅ AMT_CREDIT
+✅ AMT_ANNUITY
+✅ PAYMENT_RATE
+✅ CREDIT_INCOME_RATIO
+✅ EXT_SOURCE_MEAN
+✅ DAYS_BIRTH
+✅ DAYS_EMPLOYED
+✅ INSTAL_DPD_MEAN
+✅ INSTAL_DPD_MAX
+✅ PREV_CNT_PAYMENT_MEAN
+
+FONCTIONNALITÉS VALIDÉES
+✅ Profil client
+✅ Montants formatés
+✅ Âge calculé
+✅ Ancienneté professionnelle calculée
+✅ Analyse métier descriptive
+✅ Comparaison textuelle à la population
+
+OBJECTIF ATTEINT
+Afficher un résumé métier compréhensible du client.
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 4 — GRAPHIQUES INTERACTIFS
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Répondre aux critères CE2 et CE4.
+
+GRAPHIQUE 1
+✅ Distribution d'une variable
+✅ Choix de la variable
+✅ Position du client
+✅ Résumé textuel
+
+GRAPHIQUE 2
+✅ Analyse bi-variée
+✅ Choix variable X
+✅ Choix variable Y
+✅ Point client mis en évidence
+✅ Résumé textuel
+
+REMARQUE
+🟨 Design du point client perfectible
+✅ Fonctionnalité validée
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 5 — EXPLICATION DE LA DÉCISION
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Répondre à :
+Pourquoi cette décision ?
+
+══════════════════════════════════════════════════════════════
+5.1 BUSINESS_LABELS.PY
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER
+dashboard/src/business_labels.py
+
+CONTENU
+✅ Nom métier
+✅ Description métier
+✅ Unité éventuelle
+✅ get_feature_label()
+✅ get_feature_description()
+✅ get_feature_unit()
+
+══════════════════════════════════════════════════════════════
+5.2 IMPORTANCE GLOBALE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER UTILISÉ
+✅ global_feature_importance.parquet
+
+FONCTIONNALITÉS
+✅ Graphique d'importance globale
+✅ Traduction métier
+✅ Curseur Top N
+✅ Résumé textuel
+
+══════════════════════════════════════════════════════════════
+5.3 EXPLAINABILITY.PY
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER
+dashboard/src/explainability.py
+
+CONTENU
+✅ Chargement modèle
+✅ Chargement feature_names
+✅ SHAP local
+✅ Séparation risque
+✅ Séparation protection
+✅ Génération phrases métier
+
+══════════════════════════════════════════════════════════════
+5.4 SHAP LOCAL DANS LE DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+VALIDATIONS
+✅ SHAP calculé
+✅ SHAP affiché
+✅ Tableau variables augmentant le risque
+✅ Tableau variables réduisant le risque
+✅ Graphique SHAP local
+✅ Importance globale affichée
+
+SESSION STATE
+✅ Score affiché avant SHAP
+✅ Score conservé après calcul SHAP
+✅ SHAP conservé après recalcul du score
+✅ Réinitialisation lors du changement de client
+
+RÉSULTAT
+✅ Explication locale opérationnelle
+✅ Importance globale opérationnelle
+✅ Traduction métier opérationnelle
+
+OBJECTIF ATTEINT
+Le dashboard est capable d'expliquer la décision prise pour un client donné.
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 6 — ACCESSIBILITÉ WCAG
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+CRITÈRES
+✅ 1.1.1 Contenu non textuel
+✅ 1.4.1 Utilisation de la couleur
+✅ 1.4.3 Contraste minimum
+✅ 1.4.4 Redimensionnement du texte
+✅ 2.4.2 Titre de page
+
+ACTIONS RÉALISÉES
+✅ Vérification des contrastes
+✅ Vérification du titre de page
+✅ Vérification du zoom à 200 %
+✅ Vérification des informations non portées uniquement par la couleur
+✅ Résumés textuels ajoutés aux graphiques
+
+LIVRABLE
+✅ docs/accessibilite_wcag.md
+
+REMARQUE
+À 200 % de zoom :
+✅ Application utilisable
+✅ Boutons utilisables
+✅ Menus utilisables
+✅ Graphiques lisibles
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 7 — DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟧 EN COURS
+
+OBJECTIF
+Rendre l'application entièrement accessible en ligne pour :
+• le jury
+• le mentor
+• les évaluateurs
+• les tests utilisateurs
+
+ARCHITECTURE CIBLE
+
+Utilisateur
+↓
+Dashboard Streamlit
+↓
+API FastAPI
+↓
+Modèle LightGBM
+
+DONNÉES DASHBOARD
+↓
+Fichiers Parquet versionnés dans GitHub
+↓
+Dashboard Streamlit
+
+ARTEFACTS API
+↓
+Fichiers .pkl versionnés dans GitHub
+↓
+API FastAPI
+
+ÉTAT ACTUEL
+✅ API fonctionnelle en local
+✅ Dashboard fonctionnel en local
+✅ SHAP fonctionnel
+✅ Graphiques fonctionnels
+✅ Accessibilité validée
+✅ requirements.txt créé
+✅ .python-version créé
+✅ Projet migré sur PC personnel
+✅ Git configuré
+✅ Dépôt GitHub créé
+
+CHOIX D'ARCHITECTURE ACTUEL
+🟨 GitHub sera utilisé comme solution de stockage des artefacts
+   dans un premier temps.
+🟨 Le modèle .pkl sera testé dans GitHub.
+🟨 Les fichiers Parquet seront testés dans GitHub.
+🟨 Si les limites de GitHub sont atteintes ou si les transferts
+   sont trop longs, une solution de stockage externe sera étudiée.
+🟩 Aucune architecture de stockage externe n'est nécessaire
+   tant que GitHub permet de versionner et récupérer les fichiers
+   dans des conditions acceptables.
+
+══════════════════════════════════════════════════════════════
+7.1 AUDIT TECHNIQUE AVANT DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+VÉRIFICATIONS EFFECTUÉES
+✅ Structure projet validée
+✅ Modèle LightGBM présent localement
+✅ Feature names présents localement
+✅ Threshold présent localement
+✅ Taille modèle vérifiée
+✅ Dashboard testé
+✅ API testée
+✅ SHAP testé
+✅ requirements.txt corrigé
+✅ .python-version créé
+
+ARBORESCENCE LOCALE VALIDÉE
+
+P08/
+├── api/
+├── dashboard/
+├── data/
+├── docs/
+├── models/
+├── requirements.txt
+└── .python-version
+
+NOTE
+🟨 data/ et models/ restent nécessaires à l'exécution locale.
+🟨 Leur versionnement GitHub est en cours de validation.
+
+LIVRABLES
+✅ requirements.txt
+✅ .python-version
+
+══════════════════════════════════════════════════════════════
+7.2 MIGRATION VERS PC PERSONNEL
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Migrer le projet vers l'environnement personnel afin d'utiliser :
+• GitHub personnel
+• environnement de déploiement personnel
+
+TÂCHES
+✅ Copier le projet complet
+✅ Recréer le venv
+✅ Installer les dépendances
+✅ Vérifier API locale
+✅ Vérifier Dashboard local
+✅ Vérifier SHAP
+✅ Vérifier graphiques
+
+VALIDATION
+✅ API fonctionnelle sur PC personnel
+✅ Dashboard fonctionnel sur PC personnel
+
+══════════════════════════════════════════════════════════════
+7.3 PRÉPARATION GIT / GITHUB
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟧 EN COURS
+
+OBJECTIF
+Versionner proprement le projet et tester si GitHub peut accueillir
+l'ensemble des artefacts nécessaires au fonctionnement de l'application.
+
+CONFIGURATION
+✅ Git personnel configuré
+✅ user.name vérifié
+✅ user.email vérifié
+✅ .gitignore créé
+✅ venv exclu
+✅ __pycache__ exclu
+✅ fichiers temporaires exclus
+✅ Git LFS installé
+
+CHOIX DE VERSIONNAGE
+
+🟩 Code source → GitHub
+🟩 Documentation → GitHub
+🟩 Configuration → GitHub
+🟨 Modèle .pkl → test de versionnement GitHub
+🟨 Fichiers Parquet → test de versionnement GitHub
+
+FICHIERS À TESTER
+
+⬜ models/best_model.pkl
+⬜ models/feature_names.pkl
+⬜ models/threshold.pkl
+⬜ data/processed/dashboard_clients.parquet
+⬜ data/processed/feature_engineering.parquet
+⬜ data/processed/global_feature_importance.parquet
+
+ÉTAT GIT ACTUEL
+✅ Dépôt Git local initialisé
+✅ Premier commit créé
+✅ Dépôt GitHub créé
+🟧 Nettoyage du premier commit nécessaire
+🟧 Vérification des tailles des artefacts
+🟧 Vérification du temps de push
+⬜ Nouveau commit propre
+⬜ Push GitHub final
+⬜ Validation de récupération des fichiers
+
+OBJECTIF DE L'ESSAI
+
+Tester :
+
+1. Taille totale du dépôt
+2. Taille individuelle des fichiers
+3. Temps nécessaire au commit
+4. Temps nécessaire au push
+5. Temps nécessaire au clone
+6. Temps nécessaire à la récupération des fichiers
+7. Compatibilité avec Render
+
+CRITÈRE DE DÉCISION
+
+🟩 Si les fichiers sont correctement versionnés et récupérables :
+→ conservation des artefacts dans GitHub.
+
+🟨 Si GitHub fonctionne mais que les transferts sont trop longs :
+→ étude d'une solution externe.
+
+🟥 Si GitHub refuse certains fichiers :
+→ stockage externe des fichiers concernés uniquement.
+
+LIVRABLES
+⬜ Dépôt GitHub propre et fonctionnel
+⬜ Validation de la stratégie de stockage
+
+══════════════════════════════════════════════════════════════
+7.4 CRÉATION / FINALISATION DU DÉPÔT GITHUB
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟧 EN COURS
+
+DÉPÔT
+P08-credit-scoring-dashboard
+
+OBJECTIF
+Publier le code source, la documentation et, si les contraintes
+techniques le permettent, les artefacts nécessaires au fonctionnement
+de l'application.
+
+TÂCHES
+
+✅ Créer le dépôt GitHub
+✅ Associer le remote
+✅ Configurer la branche main
+
+🟧 Nettoyer les artefacts du premier commit
+⬜ Vérifier les tailles des fichiers
+⬜ Vérifier la taille totale du dépôt
+⬜ Créer le commit propre
+⬜ Effectuer le push
+⬜ Vérifier le temps de push
+⬜ Vérifier le temps de récupération
+⬜ Vérifier visibilité du dépôt
+⬜ Vérifier présence du code
+⬜ Vérifier présence de la documentation
+⬜ Vérifier présence du modèle
+⬜ Vérifier présence des Parquet
+⬜ Vérifier fonctionnement après clone
+
+LIVRABLE
+⬜ Dépôt GitHub fonctionnel
+
+URL
+https://github.com/tpedCode/P08-credit-scoring-dashboard
+
+VALIDATION
+
+⬜ Code visible sur GitHub
+⬜ Documentation visible sur GitHub
+⬜ Modèle accessible
+⬜ Feature names accessibles
+⬜ Threshold accessible
+⬜ Données dashboard accessibles
+⬜ Clone fonctionnel
+⬜ Dépôt suffisamment léger
+⬜ Temps de récupération acceptable
+
+══════════════════════════════════════════════════════════════
+7.5 DÉPLOIEMENT DE L'API FASTAPI
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Déployer l'API de scoring sur Render.
+
+PRÉREQUIS
+
+⬜ GitHub disponible
+⬜ Modèle accessible depuis GitHub
+⬜ Feature names accessibles
+⬜ Threshold accessible
+
+TÂCHES
+
+⬜ Créer compte Render
+⬜ Connecter GitHub
+⬜ Créer service API
+⬜ Configurer Build Command
+⬜ Configurer Start Command
+⬜ Vérifier récupération du modèle
+⬜ Vérifier récupération de feature_names
+⬜ Vérifier récupération du threshold
+⬜ Déployer
+⬜ Vérifier les logs Render
+⬜ Vérifier chargement des modèles
+
+VALIDATION TECHNIQUE
+
+⬜ Logs sans erreur
+⬜ Service démarré
+⬜ Modèle chargé
+⬜ Feature names chargés
+⬜ Threshold chargé
+⬜ Endpoint /docs disponible
+⬜ Endpoint /predict disponible
+
+LIVRABLES
+⬜ URL API publique
+
+══════════════════════════════════════════════════════════════
+7.6 TESTS API PUBLIQUE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Valider le fonctionnement de l'API déployée.
+
+TESTS
+
+⬜ Swagger accessible
+⬜ Endpoint healthcheck accessible
+⬜ Endpoint predict accessible
+⬜ Prédiction valide
+⬜ Gestion erreurs valide
+⬜ Temps de réponse acceptable
+⬜ Modèle correctement récupéré au démarrage
+⬜ Feature names correctement récupérés
+⬜ Threshold correctement récupéré
+
+LIVRABLES
+⬜ Rapport de validation API
+
+══════════════════════════════════════════════════════════════
+7.7 PRÉPARATION DU DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Préparer le dashboard pour l'environnement de production.
+
+SOURCE DES DONNÉES
+
+🟨 Première option :
+GitHub → fichiers Parquet → Dashboard
+
+🟨 Solution de secours :
+Stockage externe → fichiers Parquet → Dashboard
+
+TÂCHES
+
+⬜ Identifier API_URL locale
+⬜ Créer API_URL de production
+⬜ Utiliser variable d'environnement
+⬜ Définir le chemin des fichiers Parquet
+⬜ Vérifier récupération des fichiers depuis GitHub
+⬜ Vérifier chargement des données
+⬜ Tester mode local
+⬜ Tester mode production
+⬜ Vérifier comportement SHAP
+⬜ Vérifier comportement graphiques
+⬜ Vérifier temps de chargement
+
+LIVRABLES
+⬜ Dashboard compatible local et production
+⬜ Source de données de production validée
+
+══════════════════════════════════════════════════════════════
+7.8 DÉPLOIEMENT DU DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Déployer le dashboard Streamlit.
+
+PRÉREQUIS
+
+⬜ API déployée
+⬜ Source de données dashboard validée
+⬜ Fichiers Parquet accessibles
+⬜ Modèle accessible à l'API
+
+TÂCHES
+
+⬜ Créer service Dashboard
+⬜ Configurer environnement Streamlit
+⬜ Configurer Build Command
+⬜ Configurer Start Command
+⬜ Configurer API_URL
+⬜ Configurer récupération des données
+⬜ Déployer
+⬜ Vérifier logs
+⬜ Vérifier communication avec API
+⬜ Vérifier chargement des données
+
+VALIDATION
+
+⬜ Dashboard accessible
+⬜ Score fonctionnel
+⬜ SHAP fonctionnel
+⬜ Importance globale fonctionnelle
+⬜ Histogramme fonctionnel
+⬜ Analyse bi-variée fonctionnelle
+⬜ Données dashboard correctement chargées
+⬜ Temps de chargement acceptable
+
+LIVRABLES
+⬜ URL Dashboard publique
+
+══════════════════════════════════════════════════════════════
+7.9 VALIDATION FINALE DU DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Valider le fonctionnement complet de l'application déployée.
+
+PARCOURS DE TEST
+
+⬜ Ouverture dashboard
+⬜ Chargement des données
+⬜ Sélection client
+⬜ Calcul score
+⬜ Lecture décision
+⬜ Lecture interprétation métier
+⬜ Affichage SHAP
+⬜ Affichage importance globale
+⬜ Affichage histogramme
+⬜ Affichage analyse bi-variée
+
+VALIDATION ARCHITECTURE
+
+⬜ Dashboard → API fonctionnel
+⬜ API → modèle fonctionnel
+⬜ Dashboard → données fonctionnel
+⬜ Récupération des artefacts fonctionnelle
+⬜ Temps de chargement acceptable
+
+CRITÈRES DE SORTIE
+
+⬜ Dashboard accessible
+⬜ API accessible
+⬜ Communication Dashboard ↔ API
+⬜ Modèle accessible à l'API
+⬜ Données accessibles au dashboard
+⬜ Démonstration complète réalisable
+
+OBJECTIF FINAL
+🟩 ÉTAPE 7 TERMINÉE
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 8 — DOCUMENTATION & SOUTENANCE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Produire l'ensemble des documents nécessaires à :
+• la livraison
+• l'évaluation
+• la soutenance
+
+══════════════════════════════════════════════════════════════
+8.1 INVENTAIRE DU PROJET
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+inventaire_existant.md
+
+CONTENU
+⬜ Structure du projet
+⬜ Description API
+⬜ Description dashboard
+⬜ Description modèle
+⬜ Description données
+⬜ Description déploiement
+⬜ Description stockage des artefacts
+⬜ Liste des livrables
+
+LIVRABLE
+⬜ inventaire_existant.md
+
+══════════════════════════════════════════════════════════════
+8.2 PARCOURS UTILISATEUR
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+parcours_utilisateur.md
+
+CONTENU
+⬜ Sélection client
+⬜ Chargement des données
+⬜ Calcul score
+⬜ Lecture décision
+⬜ Analyse SHAP
+⬜ Analyse population
+⬜ Analyse graphique
+⬜ Cas d'usage métier
+
+LIVRABLE
+⬜ parcours_utilisateur.md
+
+══════════════════════════════════════════════════════════════
+8.3 JUSTIFICATION DES VISUALISATIONS
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+choix_graphiques.md
+
+CONTENU
+⬜ Justification histogramme
+⬜ Justification analyse bi-variée
+⬜ Justification importance globale
+⬜ Justification SHAP
+⬜ Réponse CE2
+⬜ Réponse CE4
+
+LIVRABLE
+⬜ choix_graphiques.md
+
+══════════════════════════════════════════════════════════════
+8.4 ACCESSIBILITÉ
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER
+✅ accessibilite_wcag.md
+
+CONTENU
+✅ Critères WCAG
+✅ Vérifications réalisées
+✅ Résultats
+✅ Conclusion
+
+══════════════════════════════════════════════════════════════
+8.5 README FINAL
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+README.md
+
+CONTENU
+⬜ Présentation du projet
+⬜ Contexte métier
+⬜ Objectifs
+⬜ Architecture
+⬜ Données
+⬜ Modèle
+⬜ API
+⬜ Dashboard
+⬜ SHAP
+⬜ Installation locale
+⬜ Gestion des artefacts
+⬜ Stockage GitHub
+⬜ Solution de secours éventuelle
+⬜ Déploiement
+⬜ Résultats
+⬜ Limites
+⬜ Évolutions futures
+
+LIVRABLE
+⬜ README.md final
+
+══════════════════════════════════════════════════════════════
+8.6 GUIDE DE DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+guide_deploiement.md
+
+CONTENU
+⬜ Déploiement API
+⬜ Déploiement dashboard
+⬜ Variables d'environnement
+⬜ Récupération du modèle
+⬜ Récupération des données
+⬜ Vérification des artefacts
+⬜ Vérifications post-déploiement
+⬜ Solution de secours si GitHub ne convient pas
+
+LIVRABLE
+⬜ guide_deploiement.md
+
+══════════════════════════════════════════════════════════════
+8.7 PRÉPARATION DE LA SOUTENANCE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Préparer un scénario fluide de démonstration.
+
+TÂCHES
+
+⬜ Choisir un client de démonstration
+⬜ Préparer calcul score
+⬜ Préparer démonstration SHAP
+⬜ Préparer démonstration importance globale
+⬜ Préparer démonstration graphiques
+⬜ Préparer démonstration accessibilité
+⬜ Préparer démonstration déploiement
+⬜ Préparer démonstration de récupération des données
+
+══════════════════════════════════════════════════════════════
+8.8 QUESTIONS JURY PROBABLES
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+questions_jury.md
+
+THÈMES À PRÉPARER
+
+⬜ Pourquoi LightGBM ?
+⬜ Pourquoi SHAP ?
+⬜ Pourquoi ce seuil métier ?
+⬜ Pourquoi ces graphiques ?
+⬜ Pourquoi FastAPI ?
+⬜ Pourquoi Streamlit ?
+⬜ Mesures d'accessibilité ?
+⬜ Pourquoi versionner le modèle ?
+⬜ Pourquoi versionner les données ?
+⬜ Quelles sont les limites de GitHub pour les artefacts ?
+⬜ Comment les artefacts sont-ils récupérés au déploiement ?
+⬜ Pourquoi une solution externe pourrait-elle être nécessaire ?
+⬜ Limites du modèle ?
+⬜ Évolutions futures ?
+
+LIVRABLE
+⬜ questions_jury.md
+
+══════════════════════════════════════════════════════════════
+8.9 SCRIPT DE DÉMONSTRATION
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+script_soutenance.md
+
+CONTENU
+
+⬜ Introduction
+⬜ Présentation métier
+⬜ Présentation API
+⬜ Présentation Dashboard
+⬜ Présentation Score
+⬜ Présentation SHAP
+⬜ Présentation Accessibilité
+⬜ Présentation Déploiement
+⬜ Présentation du stockage des artefacts
+⬜ Présentation de la récupération des données
+
+LIVRABLE
+⬜ script_soutenance.md
+
+══════════════════════════════════════════════════════════════
+8.10 PLAN DE SECOURS
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+Prévoir un support si une démonstration échoue.
+
+LIVRABLES
+
+⬜ Captures API
+⬜ Captures Dashboard
+⬜ Captures SHAP
+⬜ Captures Graphiques
+⬜ Captures Déploiement
+⬜ PDF de secours
+⬜ Données de démonstration locales
+
+══════════════════════════════════════════════════════════════
+CRITÈRE DE SORTIE DE L'ÉTAPE 8
+══════════════════════════════════════════════════════════════
+
+⬜ Documentation produite
+⬜ README finalisé
+⬜ Liens publics disponibles
+⬜ Démonstration prête
+⬜ Réponses jury préparées
+⬜ Supports de secours disponibles
+
+OBJECTIF FINAL
+🟩 ÉTAPE 8 TERMINÉE
+
+══════════════════════════════════════════════════════════════
+VUE D'ENSEMBLE
+══════════════════════════════════════════════════════════════
+
+🟩 ÉTAPE 1 — Données dashboard
+↓
+🟩 ÉTAPE 2 — Streamlit V1
+↓
+🟩 ÉTAPE 3 — Informations client
+↓
+🟩 ÉTAPE 4 — Graphiques interactifs
+↓
+🟩 ÉTAPE 5 — SHAP + traduction métier
+↓
+🟩 ÉTAPE 6 — Accessibilité WCAG
+↓
+🟧 ÉTAPE 7 — Déploiement
+↓
+🟥 ÉTAPE 8 — Documentation + soutenance
+
+══════════════════════════════════════════════════════════════
+AVANCEMENT GLOBAL
+══════════════════════════════════════════════════════════════
+
+🟩 Terminé
+• Étape 1
+• Étape 2
+• Étape 3
+• Étape 4
+• Étape 5
+• Étape 6
+
+🟧 En cours
+• Étape 7
+
+🟥 À faire
+• Étape 8
+
+Progression estimée :
+≈ 80 %
+
+══════════════════════════════════════════════════════════════
+PROCHAIN JALON
+══════════════════════════════════════════════════════════════
+
+🟧 ÉTAPE 7.3 — FINALISATION GIT / GITHUB
+
+OBJECTIF
+
+Obtenir un dépôt GitHub propre contenant :
+
+• le code
+• la documentation
+• le modèle
+• les fichiers de configuration
+• les données dashboard
+
+si les contraintes techniques de GitHub permettent leur stockage
+et leur récupération dans des conditions acceptables.
+
+ÉTAT ACTUEL
+
+✅ Projet fonctionnel stabilisé
+✅ Requirements finalisé
+✅ Python version figée
+✅ Audit technique réalisé
+✅ Projet migré sur PC personnel
+✅ Git configuré
+✅ Dépôt GitHub créé
+✅ Premier commit local créé
+
+CHOIX ACTUEL
+
+🟩 Code → GitHub
+🟩 Documentation → GitHub
+🟨 Modèle → test GitHub
+🟨 Parquet → test GitHub
+
+STRATÉGIE
+
+1. Nettoyer le premier commit
+2. Corriger le .gitignore
+3. Vérifier les tailles des fichiers
+4. Ajouter le modèle
+5. Ajouter les Parquet
+6. Créer un commit propre
+7. Effectuer le push
+8. Mesurer le temps de transfert
+9. Vérifier le dépôt GitHub
+10. Tester un clone du dépôt
+11. Vérifier que les artefacts sont récupérables
+
+DÉCISION APRÈS TEST
+
+🟩 GitHub fonctionne correctement
+→ conserver les artefacts dans GitHub.
+
+🟨 GitHub fonctionne mais les transferts sont trop longs
+→ étudier un stockage externe.
+
+🟥 GitHub bloque certains fichiers
+→ déplacer uniquement les fichiers concernés vers un stockage externe.
+
+CRITÈRE DE SORTIE
+
+🟩 Code disponible sur GitHub
+🟩 Documentation disponible sur GitHub
+🟩 Modèle accessible
+🟩 Données dashboard accessibles
+🟩 Clone fonctionnel
+🟩 Temps de récupération acceptable
+
+→ Passage à l'étape 7.5 Déploiement API
+
+══════════════════════════════════════════════════════════════
+COMMANDES DE DÉMARRAGE
+══════════════════════════════════════════════════════════════
+
+TERMINAL API
+
+cd ~/Documents/Openclassrooms/P08
+source venv/Scripts/activate
+cd api
+uvicorn api_home_credit_scoring:app --reload
+
+TERMINAL STREAMLIT
+
+cd ~/Documents/Openclassrooms/P08
+source venv/Scripts/activate
+cd dashboard
+streamlit run app.py
+
+══════════════════════════════════════════════════════════════
+NOTE DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+EN LOCAL
+
+Dashboard
+↓
+data/processed/
+↓
+Parquet locaux
+
+API
+↓
+models/
+↓
+fichiers .pkl locaux
+
+EN PRODUCTION — OPTION PRIORITAIRE
+
+Dashboard
+↓
+GitHub
+↓
+Fichiers Parquet
+
+API
+↓
+GitHub
+↓
+Fichiers .pkl
+
+EN PRODUCTION — OPTION DE SECOURS
+
+Dashboard
+↓
+Stockage externe
+↓
+Fichiers Parquet
+
+API
+↓
+Stockage externe
+↓
+Fichiers .pkl
+
+La solution de stockage externe ne sera mise en place que si
+le test GitHub montre que le stockage direct des artefacts n'est
+pas suffisamment performant ou compatible avec le déploiement.
+══════════════════════════════════════════════════════════════
