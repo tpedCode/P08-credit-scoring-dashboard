@@ -1,0 +1,1752 @@
+````markdown
+# PLAN PROJET P08 — DASHBOARD CREDIT SCORING - V2
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 1 — DONNÉES DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Créer les données nécessaires au fonctionnement du dashboard.
+
+LIVRABLES
+✅ dashboard_clients.parquet
+✅ feature_engineering.parquet
+✅ global_feature_importance.parquet
+✅ Compatibilité API validée
+✅ Prédiction validée
+
+RÉSULTAT
+dashboard_clients.parquet
+Shape : (307511, 247)
+
+Contenu :
+• SK_ID_CURR
+• 246 features modèle
+
+ARCHITECTURE DES DONNÉES
+
+🟩 Les Parquet constituent les sources de préparation des données.
+🟩 Ils ne sont pas utilisés directement par le dashboard en production.
+🟩 Les données nécessaires au dashboard sont transférées dans une base SQLite.
+🟩 Une API dédiée permet au dashboard d'interroger cette base.
+🟩 La table SQLite conserve les données FE complètes.
+🟩 L'API ne charge jamais l'ensemble de la table en mémoire.
+🟩 Les données de population sont échantillonnées au niveau des requêtes API.
+
+Flux :
+
+Parquet
+↓
+Préparation / transformation
+↓
+SQLite
+↓
+API données
+↓
+Dashboard Streamlit
+
+CONSÉQUENCE
+
+Les fichiers :
+• dashboard_clients.parquet
+• feature_engineering.parquet
+• global_feature_importance.parquet
+
+deviennent des fichiers intermédiaires de préparation, et non des dépendances de production du dashboard.
+
+PRINCIPE D'OPTIMISATION
+
+🟩 SQLite conserve la population complète.
+🟩 Les requêtes client récupèrent uniquement le client demandé.
+🟩 Les requêtes population récupèrent un échantillon limité.
+🟩 Le dashboard ne charge jamais les 307511 lignes en mémoire.
+
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 2 — STREAMLIT V1
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Sélection client → API → Score → Décision
+
+SOUS-ÉTAPES
+✅ 2.1A API propre
+✅ 2.1B Import API
+✅ 2.1C Test réel de prédiction
+✅ 2.2 Structure Streamlit
+✅ 2.3 Score et décision
+
+FONCTIONNALITÉS VALIDÉES
+✅ Sélecteur client
+✅ Appel API FastAPI
+✅ Score
+✅ Seuil métier
+✅ Distance au seuil
+✅ Décision traduite
+✅ Complétude
+✅ Message métier
+
+RÉSULTAT TESTÉ
+
+Client : 100002
+Probabilité : 36.59 %
+Seuil : 9.09 %
+Décision : Crédit refusé
+Complétude : Élevée
+Couverture : 100 %
+
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 3 — INFORMATIONS CLIENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+SOURCE ACTUELLE
+🟩 API données
+↓
+🟩 SQLite
+
+SOURCE HISTORIQUE
+🟨 feature_engineering.parquet
+
+VARIABLES AFFICHÉES
+✅ SK_ID_CURR
+✅ AMT_INCOME_TOTAL
+✅ AMT_CREDIT
+✅ AMT_ANNUITY
+✅ PAYMENT_RATE
+✅ CREDIT_INCOME_RATIO
+✅ EXT_SOURCE_MEAN
+✅ DAYS_BIRTH
+✅ DAYS_EMPLOYED
+✅ INSTAL_DPD_MEAN
+✅ INSTAL_DPD_MAX
+✅ PREV_CNT_PAYMENT_MEAN
+
+FONCTIONNALITÉS VALIDÉES
+✅ Profil client
+✅ Montants formatés
+✅ Âge calculé
+✅ Ancienneté professionnelle calculée
+✅ Analyse métier descriptive
+✅ Comparaison textuelle à la population
+
+OBJECTIF ATTEINT
+
+Afficher un résumé métier compréhensible du client.
+
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 4 — GRAPHIQUES INTERACTIFS
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Répondre aux critères CE2 et CE4.
+
+GRAPHIQUE 1
+
+✅ Distribution d'une variable
+✅ Choix de la variable
+✅ Position du client
+✅ Résumé textuel
+
+GRAPHIQUE 2
+
+✅ Analyse bi-variée
+✅ Choix variable X
+✅ Choix variable Y
+✅ Point client mis en évidence
+✅ Résumé textuel
+
+REMARQUE
+
+🟨 Design du point client perfectible
+✅ Fonctionnalité validée
+
+SOURCE EN PRODUCTION
+
+🟩 Données récupérées via l'API données.
+🟩 API données → SQLite.
+
+OPTIMISATION POPULATION
+
+🟩 La population complète est conservée dans SQLite.
+🟩 Le dashboard ne récupère jamais la population complète.
+🟩 L'API réalise l'échantillonnage lors de la requête.
+🟩 L'échantillon est limité.
+🟨 La sélection des seules variables nécessaires reste à optimiser dans l'API.
+
+PRINCIPE
+
+SQLite
+↓
+requête ciblée
+↓
+échantillonnage
+↓
+API
+↓
+Dashboard
+
+OBJECTIF
+
+🟩 Conserver la population complète comme source.
+🟩 Limiter les données transférées au dashboard.
+🟩 Éviter le chargement massif en mémoire.
+
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 5 — EXPLICATION DE LA DÉCISION
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+Répondre à :
+
+Pourquoi cette décision ?
+
+
+══════════════════════════════════════════════════════════════
+5.1 BUSINESS_LABELS.PY
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER
+dashboard/src/business_labels.py
+
+CONTENU
+✅ Nom métier
+✅ Description métier
+✅ Unité éventuelle
+✅ get_feature_label()
+✅ get_feature_description()
+✅ get_feature_unit()
+
+
+══════════════════════════════════════════════════════════════
+5.2 IMPORTANCE GLOBALE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER SOURCE DE PRÉPARATION
+global_feature_importance.parquet
+
+SOURCE EN PRODUCTION
+🟩 SQLite
+↓
+🟩 API données
+↓
+🟩 Dashboard
+
+FONCTIONNALITÉS
+
+✅ Graphique d'importance globale
+✅ Traduction métier
+✅ Curseur Top N
+✅ Résumé textuel
+
+TABLE SQLITE
+
+global_feature_importance
+
+CONTENU
+
+• feature
+• importance
+
+
+══════════════════════════════════════════════════════════════
+5.3 EXPLAINABILITY.PY
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER
+dashboard/src/explainability.py
+
+CONTENU
+✅ Chargement modèle
+✅ Chargement feature_names
+✅ SHAP local
+✅ Séparation risque
+✅ Séparation protection
+✅ Génération phrases métier
+
+POINT D'ARCHITECTURE
+
+Architecture actuelle :
+
+Dashboard
+↓
+Modèle
+↓
+SHAP
+
+Architecture cible à étudier :
+
+Dashboard
+↓
+API scoring
+↓
+Modèle
+↓
+SHAP
+
+🟨 Cette évolution sera étudiée lors de l'étape 7.8.
+
+
+══════════════════════════════════════════════════════════════
+5.4 SHAP LOCAL DANS LE DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+VALIDATIONS
+
+✅ SHAP calculé
+✅ SHAP affiché
+✅ Tableau variables augmentant le risque
+✅ Tableau variables réduisant le risque
+✅ Graphique SHAP local
+✅ Importance globale affichée
+
+SESSION STATE
+
+✅ Score affiché avant SHAP
+✅ Score conservé après calcul SHAP
+✅ SHAP conservé après recalcul du score
+✅ Réinitialisation lors du changement de client
+
+RÉSULTAT
+
+✅ Explication locale opérationnelle
+✅ Importance globale opérationnelle
+✅ Traduction métier opérationnelle
+
+OBJECTIF ATTEINT
+
+Le dashboard est capable d'expliquer la décision prise pour un client donné.
+
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 6 — ACCESSIBILITÉ WCAG
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+CRITÈRES
+
+✅ 1.1.1 Contenu non textuel
+✅ 1.4.1 Utilisation de la couleur
+✅ 1.4.3 Contraste minimum
+✅ 1.4.4 Redimensionnement du texte
+✅ 2.4.2 Titre de page
+
+ACTIONS RÉALISÉES
+
+✅ Vérification des contrastes
+✅ Vérification du titre de page
+✅ Vérification du zoom à 200 %
+✅ Vérification des informations non portées uniquement par la couleur
+✅ Résumés textuels ajoutés aux graphiques
+
+LIVRABLE
+
+✅ docs/accessibilite_wcag.md
+
+REMARQUE
+
+À 200 % de zoom :
+
+✅ Application utilisable
+✅ Boutons utilisables
+✅ Menus utilisables
+✅ Graphiques lisibles
+
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 7 — DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟧 EN COURS
+
+OBJECTIF
+
+Rendre l'application entièrement accessible en ligne pour :
+
+• le jury
+• le mentor
+• les évaluateurs
+• les tests utilisateurs
+
+
+══════════════════════════════════════════════════════════════
+ARCHITECTURE CIBLE
+══════════════════════════════════════════════════════════════
+
+Utilisateur
+↓
+Dashboard Streamlit
+↓
+┌───────────────────────┴───────────────────────┐
+↓                                               ↓
+API Scoring                                  API Données
+FastAPI                                      FastAPI
+↓                                               ↓
+LightGBM                                      SQLite
+↓                                               ↓
+Score / décision / SHAP              Informations dashboard
+
+
+══════════════════════════════════════════════════════════════
+RÉPARTITION DES RESPONSABILITÉS
+══════════════════════════════════════════════════════════════
+
+API SCORING
+
+🟩 chargement du modèle
+🟩 prédiction
+🟩 seuil métier
+🟨 calcul SHAP à étudier
+
+API DONNÉES
+
+🟩 lecture SQLite
+🟩 recherche client
+🟩 récupération variables client
+🟩 récupération données population
+🟩 échantillonnage population
+🟩 récupération importance globale
+
+DASHBOARD
+
+🟩 interface utilisateur
+🟩 appels aux APIs
+🟩 graphiques
+🟩 affichage
+🟩 traduction métier
+
+
+══════════════════════════════════════════════════════════════
+ÉTAT ACTUEL
+══════════════════════════════════════════════════════════════
+
+✅ API scoring fonctionnelle en local
+✅ API données fonctionnelle en local
+✅ SQLite fonctionnelle en local
+✅ Dashboard fonctionnel en local
+✅ SHAP fonctionnel
+✅ Graphiques fonctionnels
+✅ Accessibilité validée
+✅ requirements.txt créé
+✅ .python-version créé
+✅ Projet migré sur PC personnel
+✅ Git configuré
+✅ Dépôt GitHub créé
+
+
+══════════════════════════════════════════════════════════════
+7.1 AUDIT TECHNIQUE AVANT DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+VÉRIFICATIONS EFFECTUÉES
+
+✅ Structure projet validée
+✅ Modèle LightGBM présent localement
+✅ Feature names présents localement
+✅ Threshold présent localement
+✅ Taille modèle vérifiée
+✅ Dashboard testé
+✅ API scoring testée
+✅ API données testée
+✅ SQLite testée
+✅ SHAP testé
+✅ Graphiques testés
+✅ requirements.txt corrigé
+✅ .python-version créé
+
+ARBORESCENCE LOCALE VALIDÉE
+
+P08/
+├── api/
+├── dashboard/
+├── data/
+├── docs/
+├── models/
+├── requirements.txt
+└── .python-version
+
+NOTE
+
+🟨 data/ et models/ restent nécessaires à l'exécution locale.
+🟨 Les Parquet ne sont pas destinés à être versionnés dans GitHub.
+🟨 Le modèle sera versionné dans GitHub.
+
+VALIDATION
+
+🟩 Le dashboard utilise désormais l'API données pour les données SQLite.
+🟩 L'accès direct aux Parquet n'est plus nécessaire au fonctionnement actuel du dashboard.
+
+
+══════════════════════════════════════════════════════════════
+7.2 MIGRATION VERS PC PERSONNEL
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+
+Migrer le projet vers l'environnement personnel afin d'utiliser :
+
+• GitHub personnel
+• environnement de déploiement personnel
+
+TÂCHES
+
+✅ Copier le projet complet
+✅ Recréer le venv
+✅ Installer les dépendances
+✅ Vérifier API scoring locale
+✅ Vérifier API données locale
+✅ Vérifier Dashboard local
+✅ Vérifier SHAP
+✅ Vérifier graphiques
+
+VALIDATION
+
+✅ API scoring fonctionnelle sur PC personnel
+✅ API données fonctionnelle sur PC personnel
+✅ SQLite fonctionnelle sur PC personnel
+✅ Dashboard fonctionnel sur PC personnel
+
+
+══════════════════════════════════════════════════════════════
+7.3 PRÉPARATION GIT / GITHUB
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟧 EN COURS
+
+OBJECTIF
+
+Versionner proprement le projet sans intégrer les fichiers Parquet volumineux.
+
+VERSIONNAGE
+
+🟩 Code source → GitHub
+🟩 Documentation → GitHub
+🟩 Configuration → GitHub
+🟩 Modèle .pkl → GitHub
+🟨 Base SQLite → GitHub si sa taille reste compatible
+🟥 Parquet volumineux → hors GitHub
+
+FICHIERS MODÈLE À VERSIONNER
+
+models/
+├── best_model.pkl
+├── feature_names.pkl
+└── threshold.pkl
+
+FICHIERS PARQUET À EXCLURE
+
+data/processed/
+├── dashboard_clients.parquet
+├── feature_engineering.parquet
+└── global_feature_importance.parquet
+
+BASE SQLITE
+
+data/
+└── database/
+    └── dashboard.db
+
+CONFIGURATION
+
+✅ Git personnel configuré
+✅ user.name vérifié
+✅ user.email vérifié
+✅ .gitignore créé
+✅ venv exclu
+✅ __pycache__ exclu
+✅ fichiers temporaires exclus
+✅ Git LFS installé
+
+ÉTAT GIT ACTUEL
+
+🟧 Nettoyage du premier commit nécessaire
+🟧 Réintégration du modèle
+🟧 Exclusion des Parquet
+⬜ Vérification de la taille SQLite
+⬜ Nouveau commit propre
+⬜ Push GitHub final
+
+LIVRABLE
+
+⬜ Dépôt GitHub propre et fonctionnel
+
+
+══════════════════════════════════════════════════════════════
+7.4 CRÉATION / FINALISATION DU DÉPÔT GITHUB
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟧 EN COURS
+
+DÉPÔT
+
+P08-credit-scoring-dashboard
+
+OBJECTIF
+
+Publier le code source, le modèle et la documentation sur GitHub.
+
+TÂCHES
+
+✅ Créer le dépôt GitHub
+✅ Associer le remote
+✅ Configurer la branche main
+🟧 Nettoyer les artefacts lourds
+🟧 Réintégrer le modèle
+🟨 Vérifier la base SQLite
+⬜ Vérifier la taille SQLite
+⬜ Créer le commit propre
+⬜ Premier push propre
+⬜ Vérifier visibilité du dépôt
+⬜ Vérifier présence du code
+⬜ Vérifier présence de la documentation
+⬜ Vérifier présence du modèle
+⬜ Vérifier présence éventuelle de SQLite
+⬜ Vérifier absence des gros fichiers Parquet
+
+LIVRABLE
+
+⬜ URL GitHub du projet
+
+URL
+
+https://github.com/tpedCode/P08-credit-scoring-dashboard
+
+VALIDATION
+
+⬜ Code visible sur GitHub
+⬜ Historique des commits visible
+⬜ Dépôt suffisamment léger
+⬜ Modèle versionné
+⬜ Données Parquet absentes
+⬜ SQLite présente si validée
+
+
+══════════════════════════════════════════════════════════════
+7.5 CRÉATION / FINALISATION DE LA BASE SQLITE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+OBJECTIF
+
+Transformer les données Parquet nécessaires au dashboard en base SQLite.
+
+SOURCE DE PRÉPARATION
+
+• dashboard_clients.parquet
+• feature_engineering.parquet
+• global_feature_importance.parquet
+
+CIBLE
+
+data/database/dashboard.db
+
+TABLES CRÉÉES
+
+dashboard.db
+├── clients
+└── global_feature_importance
+
+TABLE `population_sample`
+
+🟩 Non nécessaire.
+
+L'échantillonnage est réalisé directement à partir de la table `clients`.
+
+PRINCIPE RETENU
+
+🟩 La table `clients` contient la population complète.
+🟩 Les données FE sont conservées pour chaque client.
+🟩 La population n'est pas pré-échantillonnée dans SQLite.
+🟩 L'échantillonnage est effectué au niveau de l'API.
+🟩 Les requêtes client sont ciblées.
+🟩 Le dashboard ne reçoit jamais l'intégralité de la table.
+
+VOLUME
+
+307511 lignes
+
+TABLE `global_feature_importance`
+
+Contenu :
+
+• feature
+• importance
+
+VALIDATIONS
+
+✅ SQLite créée
+✅ SQLite accessible
+✅ Table `clients` créée
+✅ Table `global_feature_importance` créée
+✅ Population complète disponible
+✅ Recherche client fonctionnelle
+✅ Recherche features fonctionnelle
+✅ Importance globale fonctionnelle
+✅ Échantillonnage population fonctionnel
+✅ Connexion API ↔ SQLite fonctionnelle
+✅ Dashboard ↔ API données fonctionnel
+
+POINT D'OPTIMISATION RESTANT
+
+🟨 L'endpoint `/population` actuel récupère encore `SELECT *` sur les lignes échantillonnées.
+
+ÉVOLUTION PRÉVUE
+
+Adapter l'API afin de sélectionner uniquement les colonnes nécessaires aux graphiques.
+
+Exemple cible :
+
+```text
+GET /population?variable=AMT_INCOME_TOTAL&sample_size=10000
+````
+
+ou :
+
+```text
+GET /population?x=AMT_INCOME_TOTAL&y=AMT_CREDIT&sample_size=10000
+```
+
+LIVRABLE
+
+🟩 data/database/dashboard.db
+
+══════════════════════════════════════════════════════════════
+7.6 CRÉATION DE L'API DONNÉES
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ — VERSION LOCALE
+
+OBJECTIF
+
+Créer une API permettant au dashboard d'interroger SQLite sans charger l'ensemble des données en mémoire.
+
+ARCHITECTURE
+
+Dashboard
+↓
+API données
+↓
+SQLite
+
+ENDPOINTS IMPLÉMENTÉS
+
+🟩 GET /health
+→ vérification de l'API et de la connexion SQLite
+
+🟩 GET /database-info
+→ informations sur les tables et leur nombre de lignes
+
+🟩 GET /clients/{client_id}
+→ récupérer les données d'un client
+
+🟩 GET /clients/{client_id}/features
+→ récupérer les features d'un client
+
+🟩 GET /population
+→ récupérer un échantillon de population
+
+🟩 GET /feature-importance
+→ récupérer l'importance globale
+
+PARAMÈTRE ACTUEL
+
+`limit`
+
+Limite actuellement comprise entre :
+
+1 et 50000
+
+PRINCIPE D'ÉCHANTILLONNAGE
+
+🟩 L'échantillonnage est effectué côté API.
+🟩 SQLite conserve la population complète.
+🟩 Le dashboard ne récupère qu'un échantillon.
+🟩 Les 307511 lignes ne sont pas transférées au dashboard.
+
+VALIDATIONS
+
+✅ API créée
+✅ Connexion SQLite
+✅ Endpoints créés
+✅ Validation `limit`
+✅ Gestion client inexistant
+✅ Gestion erreurs
+✅ Health check
+✅ Swagger
+✅ Recherche client
+✅ Recherche features
+✅ Population
+✅ Importance globale
+✅ Test local
+✅ Compatibilité avec le dashboard
+
+POINTS RESTANTS
+
+⬜ Ajouter sélection explicite des variables pour `/population`
+⬜ Ajouter paramètres `variable`, `x`, `y`
+⬜ Ajouter validation des variables autorisées
+⬜ Optimiser les requêtes population
+⬜ Tester les performances
+⬜ Vérifier mémoire
+⬜ Vérifier compatibilité Render
+
+LIVRABLE
+
+🟩 API données fonctionnelle localement
+
+══════════════════════════════════════════════════════════════
+7.7 ADAPTATION DU DASHBOARD AUX DONNÉES SQLITE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ — VERSION LOCALE
+
+OBJECTIF
+
+Supprimer la dépendance directe du dashboard aux fichiers Parquet.
+
+AVANT
+
+Streamlit
+↓
+Parquet
+
+APRÈS
+
+Streamlit
+↓
+API données
+↓
+SQLite
+
+TÂCHES
+
+✅ Client API données
+✅ Remplacement du chargement direct des données
+✅ Sélection client
+✅ Informations client
+✅ Graphiques
+✅ Importance globale
+✅ Comparaison population
+✅ Gestion de l'échantillon
+✅ Gestion des erreurs
+✅ Test fonctionnement local
+✅ Vérification du fonctionnement avec SQLite
+
+PRINCIPE
+
+Le dashboard ne doit jamais faire :
+
+```text
+SQLite → toutes les lignes → pandas
+```
+
+Il doit faire :
+
+```text
+SQLite
+↓
+requête ciblée
+↓
+API
+↓
+données nécessaires
+↓
+pandas
+↓
+visualisation
+```
+
+VALIDATION
+
+🟩 Dashboard fonctionnel avec API données
+🟩 Dashboard fonctionnel avec SQLite
+🟩 Fonctionnalités existantes conservées
+🟩 Données client accessibles
+🟩 Graphiques fonctionnels
+🟩 Importance globale fonctionnelle
+🟩 Comparaison population fonctionnelle
+
+LIVRABLE
+
+🟩 Dashboard fonctionnant avec SQLite via l'API données
+
+══════════════════════════════════════════════════════════════
+7.8 ADAPTATION DE L'EXPLAINABILITY / SHAP
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟨 À ÉTUDIER
+
+OBJECTIF
+
+Déterminer où doit être exécuté SHAP en production.
+
+ARCHITECTURE ACTUELLE
+
+Dashboard
+↓
+Modèle
+↓
+SHAP
+
+OPTION CIBLE
+
+Dashboard
+↓
+API scoring
+↓
+Modèle
+↓
+SHAP
+
+OBJECTIF
+
+Éviter d'embarquer et charger le modèle une deuxième fois dans le dashboard.
+
+TÂCHES
+
+⬜ Évaluer taille du modèle côté dashboard
+⬜ Évaluer temps de calcul SHAP
+⬜ Déterminer si SHAP doit être déplacé dans l'API scoring
+⬜ Si nécessaire, créer endpoint SHAP
+⬜ Adapter dashboard
+⬜ Tester
+⬜ Vérifier temps de réponse
+⬜ Vérifier conservation du fonctionnement actuel
+
+LIVRABLE
+
+⬜ Architecture SHAP de production validée
+
+══════════════════════════════════════════════════════════════
+7.9 DÉPLOIEMENT DE L'API SCORING
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Déployer l'API FastAPI existante sur Render.
+
+PRÉREQUIS
+
+🟩 GitHub disponible
+🟩 Modèle disponible localement
+⬜ Modèle correctement versionné sur GitHub
+
+TÂCHES
+
+⬜ Créer compte Render
+⬜ Connecter GitHub
+⬜ Créer service API
+⬜ Configurer Build Command
+⬜ Configurer Start Command
+⬜ Déployer
+⬜ Vérifier les logs Render
+⬜ Vérifier chargement du modèle
+⬜ Vérifier threshold
+⬜ Vérifier feature_names
+
+VALIDATION TECHNIQUE
+
+⬜ Logs sans erreur
+⬜ Service démarré
+⬜ Modèle chargé
+⬜ Threshold chargé
+⬜ Feature names chargés
+⬜ Endpoint /docs disponible
+⬜ Endpoint /health disponible
+⬜ Endpoint /predict disponible
+
+LIVRABLE
+
+⬜ URL API scoring publique
+
+══════════════════════════════════════════════════════════════
+7.10 DÉPLOIEMENT DE L'API DONNÉES
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Déployer l'API SQLite sur Render.
+
+PRÉREQUIS
+
+🟩 dashboard.db disponible localement
+🟩 API données fonctionnelle localement
+⬜ SQLite suffisamment légère pour être embarquée
+⬜ Décision de versionnement GitHub prise
+
+TÂCHES
+
+⬜ Ajouter SQLite au dépôt si validée
+⬜ Créer service Render
+⬜ Configurer Build Command
+⬜ Configurer Start Command
+⬜ Déployer
+⬜ Vérifier chargement SQLite
+⬜ Vérifier /health
+⬜ Vérifier recherche client
+⬜ Vérifier données population
+⬜ Vérifier échantillonnage
+⬜ Vérifier importance globale
+⬜ Vérifier temps de réponse
+⬜ Vérifier mémoire utilisée
+
+LIVRABLE
+
+⬜ URL API données publique
+
+══════════════════════════════════════════════════════════════
+7.11 TESTS DES APIS PUBLIQUES
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+API SCORING
+
+⬜ Swagger accessible
+⬜ Endpoint healthcheck accessible
+⬜ Endpoint predict accessible
+⬜ Prédiction valide
+⬜ Gestion erreurs valide
+⬜ Temps de réponse acceptable
+⬜ Modèle correctement chargé
+
+API DONNÉES
+
+⬜ Swagger accessible
+⬜ Endpoint healthcheck accessible
+⬜ Client existant
+⬜ Client inexistant
+⬜ Données population
+⬜ Échantillon limité
+⬜ Analyse bi-variée
+⬜ Importance globale
+⬜ Gestion erreurs valide
+⬜ Temps de réponse acceptable
+⬜ Mémoire maîtrisée
+⬜ SQLite correctement chargée
+
+LIVRABLE
+
+⬜ Rapport de validation des deux APIs
+
+══════════════════════════════════════════════════════════════
+7.12 PRÉPARATION DU DASHBOARD POUR LA PRODUCTION
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Préparer le dashboard pour communiquer avec les APIs déployées.
+
+VARIABLES
+
+API_SCORING_URL
+API_DATA_URL
+
+TÂCHES
+
+⬜ Supprimer URL API codée en dur
+⬜ Créer configuration locale
+⬜ Créer configuration production
+⬜ Utiliser variables d'environnement
+⬜ Tester appels API scoring
+⬜ Tester appels API données
+⬜ Tester gestion erreurs
+⬜ Vérifier cache
+⬜ Vérifier échantillonnage population
+⬜ Vérifier SHAP
+⬜ Vérifier graphiques
+⬜ Vérifier accessibilité
+⬜ Vérifier mémoire
+
+LIVRABLE
+
+⬜ Dashboard compatible local + production
+
+══════════════════════════════════════════════════════════════
+7.13 DÉPLOIEMENT DU DASHBOARD
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Déployer le dashboard Streamlit.
+
+ARCHITECTURE
+
+Streamlit
+↓
+API scoring
+↓
+LightGBM
+
+Streamlit
+↓
+API données
+↓
+SQLite
+
+PRÉREQUIS
+
+⬜ API scoring déployée
+⬜ API données déployée
+⬜ URLs de production configurées
+
+TÂCHES
+
+⬜ Créer service Dashboard
+⬜ Connecter GitHub
+⬜ Configurer environnement Streamlit
+⬜ Configurer Build Command
+⬜ Configurer Start Command
+⬜ Configurer URLs APIs
+⬜ Déployer
+⬜ Vérifier logs
+⬜ Vérifier communication avec API scoring
+⬜ Vérifier communication avec API données
+
+VALIDATION
+
+⬜ Dashboard accessible
+⬜ Sélection client fonctionnelle
+⬜ Données client correctement chargées
+⬜ Score fonctionnel
+⬜ Décision fonctionnelle
+⬜ SHAP fonctionnel
+⬜ Importance globale fonctionnelle
+⬜ Histogramme fonctionnel
+⬜ Analyse bi-variée fonctionnelle
+⬜ Données population échantillonnées
+⬜ Données correctement chargées
+⬜ Mémoire maîtrisée
+
+LIVRABLE
+
+⬜ URL Dashboard publique
+
+══════════════════════════════════════════════════════════════
+7.14 VALIDATION FINALE DU DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Valider le fonctionnement complet de l'application déployée.
+
+PARCOURS DE TEST
+
+Utilisateur
+↓
+Dashboard
+↓
+API données
+↓
+SQLite
+↓
+Informations client
+↓
+API scoring
+↓
+LightGBM
+↓
+Score
+↓
+SHAP
+↓
+Dashboard
+
+POUR LES GRAPHIQUES
+
+Dashboard
+↓
+API données
+↓
+SQLite
+↓
+Requête ciblée
+↓
+Échantillon population
+↓
+Dashboard
+
+TESTS
+
+⬜ Ouverture dashboard
+⬜ Chargement des données
+⬜ Sélection client
+⬜ Appel API données
+⬜ Calcul score
+⬜ Lecture décision
+⬜ Lecture interprétation métier
+⬜ Affichage SHAP
+⬜ Affichage importance globale
+⬜ Affichage histogramme
+⬜ Affichage analyse bi-variée
+⬜ Vérification échantillon population
+⬜ Gestion erreur API
+⬜ Gestion client inexistant
+⬜ Vérification accessibilité
+⬜ Vérification mémoire
+
+CRITÈRES DE SORTIE
+
+⬜ Dashboard accessible
+⬜ API scoring accessible
+⬜ API données accessible
+⬜ Communication Dashboard ↔ API scoring
+⬜ Communication Dashboard ↔ API données
+⬜ Modèle accessible à l'API scoring
+⬜ SQLite accessible à l'API données
+⬜ Données client accessibles
+⬜ Population échantillonnée
+⬜ Données accessibles au dashboard
+⬜ Démonstration complète réalisable
+⬜ Absence de dépassement mémoire
+
+OBJECTIF FINAL
+
+🟩 ÉTAPE 7 TERMINÉE
+
+══════════════════════════════════════════════════════════════
+ÉTAPE 8 — DOCUMENTATION & SOUTENANCE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Produire l'ensemble des documents nécessaires à :
+
+• la livraison
+• l'évaluation
+• la soutenance
+
+══════════════════════════════════════════════════════════════
+8.1 INVENTAIRE DU PROJET
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+inventaire_existant.md
+
+CONTENU
+
+⬜ Structure du projet
+⬜ Description API scoring
+⬜ Description API données
+⬜ Description dashboard
+⬜ Description modèle
+⬜ Description données
+⬜ Description SQLite
+⬜ Description échantillonnage population
+⬜ Description déploiement
+⬜ Liste des livrables
+
+══════════════════════════════════════════════════════════════
+8.2 PARCOURS UTILISATEUR
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+parcours_utilisateur.md
+
+CONTENU
+
+⬜ Sélection client
+⬜ Récupération données
+⬜ Calcul score
+⬜ Lecture décision
+⬜ Analyse SHAP
+⬜ Analyse population
+⬜ Échantillonnage population
+⬜ Analyse graphique
+⬜ Cas d'usage métier
+
+══════════════════════════════════════════════════════════════
+8.3 JUSTIFICATION DES VISUALISATIONS
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+choix_graphiques.md
+
+CONTENU
+
+⬜ Justification histogramme
+⬜ Justification analyse bi-variée
+⬜ Justification importance globale
+⬜ Justification SHAP
+⬜ Justification échantillonnage
+⬜ Réponse CE2
+⬜ Réponse CE4
+
+══════════════════════════════════════════════════════════════
+8.4 ACCESSIBILITÉ
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟩 TERMINÉ
+
+FICHIER
+
+✅ accessibilite_wcag.md
+
+CONTENU
+
+✅ Critères WCAG
+✅ Vérifications réalisées
+✅ Résultats
+✅ Conclusion
+
+══════════════════════════════════════════════════════════════
+8.5 README FINAL
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+README.md
+
+CONTENU
+
+⬜ Présentation du projet
+⬜ Contexte métier
+⬜ Objectifs
+⬜ Architecture
+⬜ Données
+⬜ Modèle
+⬜ API scoring
+⬜ API données
+⬜ SQLite
+⬜ Échantillonnage population
+⬜ Dashboard
+⬜ SHAP
+⬜ Installation locale
+⬜ Gestion des artefacts
+⬜ Gestion des Parquet
+⬜ Déploiement
+⬜ Résultats
+⬜ Limites
+⬜ Évolutions futures
+
+LIVRABLE
+
+⬜ README.md final
+
+══════════════════════════════════════════════════════════════
+8.6 GUIDE DE DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+guide_deploiement.md
+
+CONTENU
+
+⬜ Préparation SQLite
+⬜ Déploiement API scoring
+⬜ Déploiement API données
+⬜ Déploiement dashboard
+⬜ Variables d'environnement
+⬜ Configuration GitHub
+⬜ Configuration Render
+⬜ Chargement du modèle
+⬜ Chargement SQLite
+⬜ Échantillonnage population
+⬜ Vérifications post-déploiement
+
+══════════════════════════════════════════════════════════════
+8.7 PRÉPARATION DE LA SOUTENANCE
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Préparer un scénario fluide de démonstration.
+
+TÂCHES
+
+⬜ Choisir un client de démonstration
+⬜ Préparer calcul score
+⬜ Préparer démonstration SHAP
+⬜ Préparer démonstration importance globale
+⬜ Préparer démonstration graphiques
+⬜ Préparer démonstration échantillonnage
+⬜ Préparer démonstration accessibilité
+⬜ Préparer démonstration déploiement
+⬜ Préparer présentation de l'architecture API
+⬜ Préparer présentation de SQLite
+
+══════════════════════════════════════════════════════════════
+8.8 QUESTIONS JURY PROBABLES
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+questions_jury.md
+
+THÈMES À PRÉPARER
+
+⬜ Pourquoi LightGBM ?
+⬜ Pourquoi SHAP ?
+⬜ Pourquoi ce seuil métier ?
+⬜ Pourquoi ces graphiques ?
+⬜ Pourquoi FastAPI ?
+⬜ Pourquoi Streamlit ?
+⬜ Pourquoi SQLite ?
+⬜ Pourquoi une API dédiée aux données ?
+⬜ Pourquoi séparer API scoring et API données ?
+⬜ Pourquoi ne pas charger directement les Parquet ?
+⬜ Pourquoi ne pas versionner les Parquet ?
+⬜ Pourquoi versionner le modèle ?
+⬜ Comment les données sont-elles fournies au dashboard ?
+⬜ Pourquoi conserver les données FE complètes dans SQLite ?
+⬜ Pourquoi échantillonner la population au niveau de l'API ?
+⬜ Comment éviter le chargement de toute la population en mémoire ?
+⬜ Comment les APIs communiquent-elles ?
+⬜ Mesures d'accessibilité ?
+⬜ Limites du modèle ?
+⬜ Évolutions futures ?
+
+LIVRABLE
+
+⬜ questions_jury.md
+
+══════════════════════════════════════════════════════════════
+8.9 SCRIPT DE DÉMONSTRATION
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+FICHIER
+
+script_soutenance.md
+
+CONTENU
+
+⬜ Introduction
+⬜ Présentation métier
+⬜ Présentation architecture
+⬜ Présentation API scoring
+⬜ Présentation API données
+⬜ Présentation SQLite
+⬜ Présentation échantillonnage population
+⬜ Présentation Dashboard
+⬜ Présentation Score
+⬜ Présentation SHAP
+⬜ Présentation Accessibilité
+⬜ Présentation Déploiement
+⬜ Présentation du flux des données
+
+══════════════════════════════════════════════════════════════
+8.10 PLAN DE SECOURS
+══════════════════════════════════════════════════════════════
+
+STATUT
+🟥 À FAIRE
+
+OBJECTIF
+
+Prévoir un support si une démonstration échoue.
+
+LIVRABLES
+
+⬜ Captures API scoring
+⬜ Captures API données
+⬜ Captures Dashboard
+⬜ Captures SHAP
+⬜ Captures Graphiques
+⬜ Captures SQLite
+⬜ Captures échantillonnage
+⬜ Captures Déploiement
+⬜ PDF de secours
+
+══════════════════════════════════════════════════════════════
+CRITÈRE DE SORTIE DE L'ÉTAPE 8
+══════════════════════════════════════════════════════════════
+
+⬜ Documentation produite
+⬜ README finalisé
+⬜ Liens publics disponibles
+⬜ Démonstration prête
+⬜ Réponses jury préparées
+⬜ Supports de secours disponibles
+
+OBJECTIF FINAL
+
+🟩 ÉTAPE 8 TERMINÉE
+
+══════════════════════════════════════════════════════════════
+VUE D'ENSEMBLE
+══════════════════════════════════════════════════════════════
+
+🟩 ÉTAPE 1 — Données dashboard
+↓
+🟩 ÉTAPE 2 — Streamlit V1
+↓
+🟩 ÉTAPE 3 — Informations client
+↓
+🟩 ÉTAPE 4 — Graphiques interactifs
+↓
+🟩 ÉTAPE 5 — SHAP + traduction métier
+↓
+🟩 ÉTAPE 6 — Accessibilité WCAG
+↓
+🟧 ÉTAPE 7 — Déploiement
+↓
+🟥 ÉTAPE 8 — Documentation + soutenance
+
+══════════════════════════════════════════════════════════════
+AVANCEMENT GLOBAL
+══════════════════════════════════════════════════════════════
+
+🟩 Terminé
+• Étape 1
+• Étape 2
+• Étape 3
+• Étape 4
+• Étape 5
+• Étape 6
+
+🟧 En cours
+• Étape 7
+
+🟥 À faire
+• Étape 8
+
+Progression estimée :
+≈ 85 %
+
+══════════════════════════════════════════════════════════════
+PROCHAIN JALON
+══════════════════════════════════════════════════════════════
+
+🟧 ÉTAPE 7.3 — PRÉPARATION GIT / GITHUB
+
+OBJECTIF
+
+Nettoyer le dépôt GitHub avant de poursuivre le déploiement.
+
+ÉTAT ACTUEL
+
+🟩 Dashboard fonctionnel
+🟩 API scoring fonctionnelle
+🟩 API données fonctionnelle
+🟩 SQLite fonctionnelle
+🟩 Architecture locale validée
+🟨 SHAP production à étudier
+🟨 GitHub à nettoyer
+🟥 Déploiement à effectuer
+
+À FAIRE
+
+⬜ Vérifier `.gitignore`
+⬜ Vérifier que les Parquet ne sont pas suivis par Git
+⬜ Vérifier la taille de `dashboard.db`
+⬜ Décider du versionnement de SQLite
+⬜ Nettoyer le premier commit si nécessaire
+⬜ Réintégrer le modèle
+⬜ Créer le commit propre
+⬜ Push GitHub final
+
+→ Passage à l'étape 7.8 puis 7.9
+
+══════════════════════════════════════════════════════════════
+COMMANDES DE DÉMARRAGE
+══════════════════════════════════════════════════════════════
+
+TERMINAL 1 — API SCORING
+
+cd C:/Users/barre/Documents/Pro/Reconversion_professionnelle/Formations/Data_Scientist_by_Openclassrooms/P08
+source venv/Scripts/activate
+cd api
+uvicorn api_home_credit_scoring:app --reload --port 8000
+
+API Scoring :
+[http://127.0.0.1:8000](http://127.0.0.1:8000)
+
+Swagger :
+[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+TERMINAL 2 — API DONNÉES
+
+cd C:/Users/barre/Documents/Pro/Reconversion_professionnelle/Formations/Data_Scientist_by_Openclassrooms/P08
+source venv/Scripts/activate
+cd api
+uvicorn api_dashboard_data:app --reload --port 8001
+
+API Données :
+[http://127.0.0.1:8001](http://127.0.0.1:8001)
+
+Swagger :
+[http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+
+TERMINAL 3 — STREAMLIT
+
+cd C:/Users/barre/Documents/Pro/Reconversion_professionnelle/Formations/Data_Scientist_by_Openclassrooms/P08
+source venv/Scripts/activate
+cd dashboard
+streamlit run app.py
+
+Dashboard :
+[http://localhost:8501](http://localhost:8501)
+
+══════════════════════════════════════════════════════════════
+VÉRIFICATION LOCALE
+══════════════════════════════════════════════════════════════
+
+API Scoring :
+
+[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+
+API Données :
+
+[http://127.0.0.1:8001/docs](http://127.0.0.1:8001/docs)
+
+Dashboard :
+
+[http://localhost:8501](http://localhost:8501)
+
+══════════════════════════════════════════════════════════════
+NOTE ARCHITECTURE LOCALE
+══════════════════════════════════════════════════════════════
+
+En local :
+
+Dashboard
+↓
+API scoring → modèle
+
+Dashboard
+↓
+API données → SQLite
+
+Pour les graphiques :
+
+Dashboard
+↓
+API données
+↓
+SQLite
+↓
+échantillon population
+↓
+Dashboard
+
+══════════════════════════════════════════════════════════════
+NOTE DÉPLOIEMENT
+══════════════════════════════════════════════════════════════
+
+En production :
+
+Dashboard Streamlit
+↓
+┌───────────────────┴───────────────────┐
+↓                                       ↓
+API scoring                         API données
+↓                                       ↓
+LightGBM                              SQLite
+↓                                       ↓
+Score / SHAP                    Données dashboard
+
+Les fichiers Parquet restent des fichiers de préparation.
+
+Ils ne sont pas nécessaires à l'exécution du dashboard en production.
+
+══════════════════════════════════════════════════════════════
+OBJECTIF FINAL DU PROJET
+══════════════════════════════════════════════════════════════
+
+🟩 Dashboard fonctionnel
+🟩 API scoring fonctionnelle
+🟩 API données fonctionnelle
+🟩 SQLite fonctionnelle
+🟩 Population complète conservée
+🟩 Échantillonnage API fonctionnel
+🟩 SHAP fonctionnel en local
+🟩 Graphiques fonctionnels
+🟩 Accessibilité validée
+🟨 GitHub à finaliser
+🟥 APIs à déployer
+🟥 Dashboard à déployer
+🟥 Documentation à finaliser
+🟥 Soutenance à préparer

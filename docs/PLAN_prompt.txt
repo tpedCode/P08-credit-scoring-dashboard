@@ -1,0 +1,76 @@
+Tu es un expert en data science et professeur pour des étudiants dans ce dommaine, tu vas m'aider, moi étudiante en data science qui connait les bases mais qui a besoin d'explications concretes et trés pédagogique pck en reconversion pas du milieu, à mener à bien un des projets pro de ma formation
+__________________________
+Voici ma mission :
+
+Vous êtes Data Scientist au sein d'une société financière nommée Prêt à dépenser, qui propose des crédits à la consommation pour des personnes ayant peu ou pas du tout d'historique de prêt.
+Vous venez de mettre en œuvre un outil de “scoring crédit” pour calculer la probabilité qu’un client rembourse son crédit, et classifier la demande en crédit accordé ou refusé. 
+Les chargés de relation client ont fait remonter le fait que les clients sont de plus en plus demandeurs de transparence vis-à-vis des décisions d’octroi de crédit. 
+Prêt à dépenser décide donc de développer un dashboard interactif pour que les chargés de relation client puissent expliquer de façon la plus transparente possible les décisions d’octroi de crédit, lors de rendez-vous avec eux. Cette volonté de transparence va tout à fait dans le sens des valeurs que l’entreprise veut incarner.
+Vous reprendrez les mêmes données que vous avez utilisées pour réaliser le modèle de classification. Vous pouvez les télécharger directement à cette adresse.
+Michaël vous a envoyé un mail pour vous préciser ses attentes et ses conseils.
+De : Michaël 
+À : moi
+Objet : Scoring crédit
+Bonjour,
+Bravo pour la réalisation de l’outil de scoring et ta présentation à l’équipe. Tu as assuré !
+Maintenant nous souhaitons utiliser l’API pour réaliser un dashboard à destination de nos chargés de relation client. Ils le réclament depuis longtemps afin de pouvoir mieux expliquer à leurs clients les décisions, et parfois les revoir si nécessaire.
+Voici les spécifications pour le dashboard interactif :
+Permettre de visualiser le score, sa probabilité (est-il loin du seuil ?) et l’interprétation de ce score pour chaque client de façon intelligible pour une personne non experte en data science.
+Permettre de visualiser les principales informations descriptives relatives à un client.
+Permettre de comparer, à l’aide de graphiques, les principales informations descriptives relatives à un client à l’ensemble des clients ou à un groupe de clients similaires (via un système de filtre : par exemple, liste déroulante des principales variables).
+Prendre en compte le besoin des personnes en situation de handicap dans la réalisation des graphiques, en couvrant des critères d'accessibilité du WCAG.
+Déployer le dashboard sur une plateforme Cloud, afin qu'il soit accessible pour d'autres utilisateurs sur leur poste de travail.
+Optionnellement (si tu as le temps) : Permettre d’obtenir un score et une probabilité rafraîchis après avoir saisi une modification d’une ou plusieurs informations relatives à un client, ainsi que de saisir un nouveau dossier client pour en obtenir le score et la probabilité.
+C’est une première itération que nous présenterons aux chargés de relation client pour nous assurer que nous répondons à leur besoin. 
+Je te propose d’utiliser Dash ou Bokeh ou Streamlit pour réaliser ce dashboard interactif. Ce dashboard appellera l’API de prédiction que tu as déjà réalisée pour déterminer la probabilité et la classe (accord ou refus) d’un client. 
+Bon courage !
+Michaël 
+__________________________
+Les étapes qu'on me préconise de suivre :
+
+Avant de démarrer cette étape, je dois avoir :
+lu le scénario en entier et les documents fournis ;
+compris les besoins des utilisateurs du dashboard ;
+avoir regardé quelques tutoriels d’implémentation de dashboards en Python.
+
+Une fois cette étape terminée, je devrais avoir :
+un prototype fonctionnel du dashboard intégrant les fonctionnalités clés, tout en étant déployé dans le web.
+
+Recommandations : 
+Commencez par des maquettes simplifiées pour valider l'approche avec les utilisateurs.
+Pour la réalisation technique du Dashboard vous pouvez vous appuyer sur les librairies Dash ou Bokeh, ainsi qu’avec Streamlit.
+Assurez-vous que votre prototype initial du dashboard comprend des fonctionnalités clés :
+visualisation du score de crédit (jauge colorée) et la contribution des features qui ont amené le modèle à prédire le score (feature importance locale et sa comparaison avec la feature importance globale) ;
+visualisation des caractéristiques clients et comment ils se situent par rapport aux autres clients sous forme de graphiques (possibilité de choisir feature par feature) ;
+graphique d’analyse bi-variée entre deux features sélectionnées ;
+autres graphiques pertinents pour la présentation des données client ;
+intégration d'une API pour récupérer le score du client ;
+interface pour la modification des informations client via l'API.
+
+Points de vigilance : 
+Assurez l'accessibilité et la compréhensibilité du dashboard pour les non-experts.
+
+Ressources :
+Documentation Streamlit : commencez par la partie “Main concepts” puis ”Create an app” puis  “Multipage apps”
+__________________________
+Le référentiel d'évaluation du projet :
+
+Réaliser un tableau de bord afin de présenter son travail de modélisation à un public non technique et de manière adaptée à des personnes en situation de handicap en appliquant certains critères d'accessibilité du WCAG
+CE1 Vous avez décrit et conçu un parcours utilisateur simple permettant de répondre aux besoins des utilisateurs (les différentes actions et clics sur les différents graphiques permettent de répondre à une question que se pose l'utilisateur). 
+CE2 Vous avez développé au moins deux graphiques interactifs permettant aux utilisateurs d'explorer les données. 
+CE3 Vous avez réalisé des graphiques lisibles (taille de texte suffisante, définition lisible). 
+CE4 Vous avez réalisé des graphiques qui permettent de répondre à la problématique métier. 
+CE5 Vous avez pris en compte le besoin des personnes en situation de handicap dans la réalisation des graphiques : vous avez pris en compte au minimum les critères d'accessibilité du WCAG suivants : 
+Critère de succès 1.1.1 Contenu non textuel 
+Critère de succès 1.4.1 Utilisation de la couleur 
+Critère de succès 1.4.3 Contraste (minimum) 
+Critère de succès 1.4.4 Redimensionnement du texte 
+Critère de succès 2.4.2 Titre de page 
+CE6 Vous avez déployé le dashboard sur le web afin qu'il soit accessible pour d'autres utilisateurs sur leurs postes de travail.
+__________________________
+J'ai à ma disposition les tables de données brutes qui m'ont servies précédement à tester plusieurs modèles de classification, j'ai pour cela fait un feature ingeneering et des nettoyages et optimisation pour les modèles.
+J'ai fini par choisir un modèle LightGBM.
+J'ai donc également la table qui m'a servie d'entrainement au modèle, ainsi que les artefacts necessaires à un suivi MLFlow.
+Je peux te donner mon notebook de modeling également si besoin pour que tu =connaisse les nomcs des tables et features.
+J'ai utilisé streamlit pour faire une api de test du modèle également, j'ai aussi le script de cette api.
+Je veux repartir au maximum de l'existant pour ce projet, donne moi un plan global d'exécution de ce projet, nous travaillerons ensuite dans le détail de chaques parties.
