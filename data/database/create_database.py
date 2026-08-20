@@ -8,9 +8,10 @@ import pandas as pd
 # CONFIGURATION
 # ==================================================
 
-BASE_DIR = Path(__file__).resolve().parents[1]
+BASE_DIR = Path(__file__).resolve().parents[2]
 
 PARQUET_DIR = BASE_DIR / "data" / "processed"
+
 DATABASE_PATH = (
     BASE_DIR
     / "data"
@@ -18,10 +19,31 @@ DATABASE_PATH = (
     / "dashboard.db"
 )
 
-CLIENTS_PATH = PARQUET_DIR / "dashboard_clients.parquet"
-FEATURE_IMPORTANCE_PATH = (
-    PARQUET_DIR / "global_feature_importance.parquet"
+CLIENTS_PATH = (
+    PARQUET_DIR
+    / "dashboard_clients.parquet"
 )
+
+FEATURE_IMPORTANCE_PATH = (
+    PARQUET_DIR
+    / "global_feature_importance.parquet"
+)
+
+
+# ==================================================
+# VERIFICATION DES FICHIERS
+# ==================================================
+
+if not CLIENTS_PATH.exists():
+    raise FileNotFoundError(
+        f"Fichier introuvable : {CLIENTS_PATH}"
+    )
+
+if not FEATURE_IMPORTANCE_PATH.exists():
+    raise FileNotFoundError(
+        f"Fichier introuvable : "
+        f"{FEATURE_IMPORTANCE_PATH}"
+    )
 
 
 # ==================================================
@@ -30,7 +52,10 @@ FEATURE_IMPORTANCE_PATH = (
 
 print("Chargement des données...")
 
-clients = pd.read_parquet(CLIENTS_PATH)
+clients = pd.read_parquet(
+    CLIENTS_PATH
+)
+
 feature_importance = pd.read_parquet(
     FEATURE_IMPORTANCE_PATH
 )
@@ -52,12 +77,14 @@ print(
 
 print("\nCréation de la base SQLite...")
 
-connection = sqlite3.connect(DATABASE_PATH)
+connection = sqlite3.connect(
+    DATABASE_PATH
+)
 
 
-# --------------------------------------------------
+# ==================================================
 # TABLE CLIENTS
-# --------------------------------------------------
+# ==================================================
 
 clients.to_sql(
     "clients",
@@ -67,9 +94,9 @@ clients.to_sql(
 )
 
 
-# --------------------------------------------------
+# ==================================================
 # TABLE FEATURE IMPORTANCE
-# --------------------------------------------------
+# ==================================================
 
 feature_importance.to_sql(
     "global_feature_importance",
@@ -117,15 +144,29 @@ client_count = connection.execute(
 ).fetchone()[0]
 
 importance_count = connection.execute(
-    "SELECT COUNT(*) FROM global_feature_importance"
+    "SELECT COUNT(*) "
+    "FROM global_feature_importance"
 ).fetchone()[0]
+
+
+# ==================================================
+# FERMETURE
+# ==================================================
 
 connection.close()
 
 
+# ==================================================
+# RESULTAT
+# ==================================================
+
 print("\nBase créée avec succès.")
-print(f"Chemin : {DATABASE_PATH}")
-print(f"Clients : {client_count:,}")
+print(
+    f"Chemin : {DATABASE_PATH}"
+)
+print(
+    f"Clients : {client_count:,}"
+)
 print(
     f"Feature importance : "
     f"{importance_count:,}"
